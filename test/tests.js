@@ -43,10 +43,15 @@ describe("Topping MQTT Client", function() {
   });
 
   it("should retrieve retained messages", function() {
-    this.client.subscribe(this.testTopic + "/foo", this.handler);
+    const fooHandler = sinon.spy();
+    const bazHandler = sinon.spy();
 
-    return this.waitForHandler().then(() => {
-      expect(this.handler).to.have.been.calledWith("bar", this.testTopic + "/foo");
+    this.client.subscribe(this.testTopic + "/foo", fooHandler);
+    this.client.subscribe(this.testTopic + "/baz", bazHandler);
+
+    return waitFor(() => fooHandler.called && bazHandler.called).then(() => {
+      expect(fooHandler).to.have.been.calledOnce.and.calledWith("bar", this.testTopic + "/foo");
+      expect(bazHandler).to.have.been.calledOnce.and.calledWith(23, this.testTopic + "/baz");
     });
   });
 
