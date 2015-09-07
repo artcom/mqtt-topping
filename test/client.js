@@ -28,7 +28,7 @@ function waitFor(condition, timeout=2000) {
   });
 };
 
-describe("Topping MQTT Client", function() {
+describe("MQTT Client", function() {
   beforeEach(function() {
     this.testTopic = "test/topping-" + Date.now();
 

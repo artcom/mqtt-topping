@@ -23,6 +23,8 @@
     "sinon-chai": "^2.8.0"
   },
   "dependencies": {
+    "axios": "^0.5.4",
+    "lodash": "^3.10.1",
     "mqtt": "^1.4.0"
   }
 }
