@@ -24,28 +24,30 @@ class ClientWrapper {
     });
   }
 
-  subscribe(topic, handler, callback) {
-    let subscribe = false;
+  subscribe(topic, handler) {
+    return new Promise((resolve, reject) => {
+      let subscribe = false;
 
-    if (!this.subscriptions[topic]) {
-      this.subscriptions[topic] = [];
-      subscribe = true;
-    }
+      if (!this.subscriptions[topic]) {
+        this.subscriptions[topic] = [];
+        subscribe = true;
+      }
 
-    this.subscriptions[topic].push(handler);
+      this.subscriptions[topic].push(handler);
 
-    if (subscribe) {
-      this.client.subscribe(topic, callback);
-    } else if (callback) {
-      callback();
-    }
+      if (subscribe) {
+        this.client.subscribe(topic, resolve);
+      } else {
+        resolve();
+      }
+    });
   };
 
-  handleMessage(topic, json) {
+  handleMessage(topic, json, packet) {
     const payload = JSON.parse(json);
 
     this.subscriptions[topic].forEach(function(callback) {
-      callback(payload, topic);
+      callback(payload, topic, packet);
     }, this);
   }
 }

@@ -24,17 +24,11 @@ function waitFor(condition, timeout=2000) {
         clearInterval(interval);
         resolve();
       }
-    }, 100);
+    }, 20);
   });
 };
 
-describe("Topping", function() {
-  function afterHandlerWasCalled(callback) {
-    waitFor(function() {
-      return handler.called;
-    }, callback);
-  }
-
+describe("Topping MQTT Client", function() {
   beforeEach(function() {
     this.testTopic = "test/topping-" + Date.now();
     this.handler = sinon.spy();
@@ -48,11 +42,21 @@ describe("Topping", function() {
     });
   });
 
-  it("should retrieve retained message", function() {
+  it("should retrieve retained messages", function() {
     this.client.subscribe(this.testTopic + "/foo", this.handler);
 
     return this.waitForHandler().then(() => {
       expect(this.handler).to.have.been.calledWith("bar", this.testTopic + "/foo");
+    });
+  });
+
+  it("should retrieve non-retained messages", function() {
+    return this.client.subscribe(this.testTopic + "/onEvent", this.handler).then(() => {
+      return this.client.publish(this.testTopic + "/onEvent", "hello");
+    }).then(() => {
+      return this.waitForHandler();
+    }).then(() => {
+      expect(this.handler).to.have.been.calledWith("hello", this.testTopic + "/onEvent");
     });
   });
 });
