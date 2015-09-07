@@ -1,13 +1,6 @@
-const mqtt = require("mqtt");
+import mqtt from "mqtt";
 
-function isUpperCase(string) {
-  return string.toUpperCase() === string;
-}
-
-function isEventOrCommand(topic) {
-  const prefix = topic.substr(0, 2);
-  return topic.length > 2 && (prefix === "on" || prefix === "do") && isUpperCase(topic.charAt(2));
-}
+import {isEventOrCommand} from "./helpers";
 
 class ClientWrapper {
   constructor(client) {

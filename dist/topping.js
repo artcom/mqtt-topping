@@ -2,18 +2,15 @@
 
 var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
 
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { "default": obj }; }
+
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-var mqtt = require("mqtt");
+var _mqtt = require("mqtt");
 
-function isUpperCase(string) {
-  return string.toUpperCase() === string;
-}
+var _mqtt2 = _interopRequireDefault(_mqtt);
 
-function isEventOrCommand(topic) {
-  var prefix = topic.substr(0, 2);
-  return topic.length > 2 && (prefix === "on" || prefix === "do") && isUpperCase(topic.charAt(2));
-}
+var _helpers = require("./helpers");
 
 var ClientWrapper = (function () {
   function ClientWrapper(client) {
@@ -31,35 +28,39 @@ var ClientWrapper = (function () {
       var _this = this;
 
       return new Promise(function (resolve, reject) {
-        var retain = !isEventOrCommand(topic);
+        var retain = !(0, _helpers.isEventOrCommand)(topic);
         _this.client.publish(topic, JSON.stringify(payload), { retain: retain, qos: 2 }, resolve);
       });
     }
   }, {
     key: "subscribe",
-    value: function subscribe(topic, handler, callback) {
-      var subscribe = false;
+    value: function subscribe(topic, handler) {
+      var _this2 = this;
 
-      if (!this.subscriptions[topic]) {
-        this.subscriptions[topic] = [];
-        subscribe = true;
-      }
+      return new Promise(function (resolve, reject) {
+        var subscribe = false;
 
-      this.subscriptions[topic].push(handler);
+        if (!_this2.subscriptions[topic]) {
+          _this2.subscriptions[topic] = [];
+          subscribe = true;
+        }
 
-      if (subscribe) {
-        this.client.subscribe(topic, callback);
-      } else if (callback) {
-        callback();
-      }
+        _this2.subscriptions[topic].push(handler);
+
+        if (subscribe) {
+          _this2.client.subscribe(topic, resolve);
+        } else {
+          resolve();
+        }
+      });
     }
   }, {
     key: "handleMessage",
-    value: function handleMessage(topic, json) {
+    value: function handleMessage(topic, json, packet) {
       var payload = JSON.parse(json);
 
       this.subscriptions[topic].forEach(function (callback) {
-        callback(payload, topic);
+        callback(payload, topic, packet);
       }, this);
     }
   }]);
@@ -70,11 +71,10 @@ var ClientWrapper = (function () {
 module.exports = {
   connect: function connect(uri) {
     return new Promise(function (resolve, reject) {
-      var client = mqtt.connect(uri);
+      var client = _mqtt2["default"].connect(uri);
       client.once("connect", function () {
         resolve(new ClientWrapper(client));
       });
     });
   }
 };
-//# sourceMappingURL=topping.js.map
