@@ -38,6 +38,7 @@ var ClientWrapper = (function () {
       var _this2 = this;
 
       return new Promise(function (resolve, reject) {
+        var regexp = (0, _helpers.topicRegexp)(topic);
         var subscribe = false;
 
         if (!_this2.subscriptions[topic]) {
@@ -45,7 +46,7 @@ var ClientWrapper = (function () {
           subscribe = true;
         }
 
-        _this2.subscriptions[topic].push(handler);
+        _this2.subscriptions[topic].push({ handler: handler, regexp: regexp });
 
         if (subscribe) {
           _this2.client.subscribe(topic, resolve);
@@ -57,11 +58,20 @@ var ClientWrapper = (function () {
   }, {
     key: "handleMessage",
     value: function handleMessage(topic, json, packet) {
+      var _this3 = this;
+
       var payload = JSON.parse(json);
 
-      this.subscriptions[topic].forEach(function (callback) {
-        callback(payload, topic, packet);
-      }, this);
+      Object.keys(this.subscriptions).forEach(function (key) {
+        _this3.subscriptions[key].forEach(function (_ref) {
+          var handler = _ref.handler;
+          var regexp = _ref.regexp;
+
+          if (regexp.test(topic)) {
+            handler(payload, topic, packet);
+          }
+        });
+      });
     }
   }]);
 

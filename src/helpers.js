@@ -9,3 +9,14 @@ export function isEventOrCommand(topic) {
     && (prefix === "on" || prefix === "do")
     && isUpperCase(topic.charAt(lastSlash + 3));
 }
+
+function escapeRegExp(string){
+  return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+export function topicRegexp(topic) {
+  const string = "^" + escapeRegExp(topic)
+    .replace(/\/\\\+/g, "\/[^\/]*")
+    .replace(/\/#$/g, "(\/.*)?") + "$";
+  return new RegExp(string);
+}

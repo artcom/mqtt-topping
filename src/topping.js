@@ -1,6 +1,6 @@
 import mqtt from "mqtt";
 
-import {isEventOrCommand} from "./helpers";
+import {isEventOrCommand, topicRegexp} from "./helpers";
 
 class ClientWrapper {
   constructor(client) {
@@ -19,6 +19,7 @@ class ClientWrapper {
 
   subscribe(topic, handler) {
     return new Promise((resolve, reject) => {
+      const regexp = topicRegexp(topic);
       let subscribe = false;
 
       if (!this.subscriptions[topic]) {
@@ -26,7 +27,7 @@ class ClientWrapper {
         subscribe = true;
       }
 
-      this.subscriptions[topic].push(handler);
+      this.subscriptions[topic].push({handler, regexp});
 
       if (subscribe) {
         this.client.subscribe(topic, resolve);
@@ -39,9 +40,13 @@ class ClientWrapper {
   handleMessage(topic, json, packet) {
     const payload = JSON.parse(json);
 
-    this.subscriptions[topic].forEach(function(callback) {
-      callback(payload, topic, packet);
-    }, this);
+    Object.keys(this.subscriptions).forEach((key) => {
+      this.subscriptions[key].forEach(function({handler, regexp}) {
+        if (regexp.test(topic)) {
+          handler(payload, topic, packet);
+        }
+      });
+    });
   }
 }
 

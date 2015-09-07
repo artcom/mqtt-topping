@@ -31,8 +31,6 @@ function waitFor(condition, timeout=2000) {
 describe("Topping MQTT Client", function() {
   beforeEach(function() {
     this.testTopic = "test/topping-" + Date.now();
-    this.handler = sinon.spy();
-    this.waitForHandler = waitFor.bind(null, () => this.handler.called);
 
     return topping.connect(brokerUri).then((client) => {
       this.client = client;
@@ -56,12 +54,38 @@ describe("Topping MQTT Client", function() {
   });
 
   it("should retrieve non-retained messages", function() {
-    return this.client.subscribe(this.testTopic + "/onEvent", this.handler).then(() => {
+    const handler = sinon.spy();
+
+    return this.client.subscribe(this.testTopic + "/onEvent", handler).then(() => {
       return this.client.publish(this.testTopic + "/onEvent", "hello");
     }).then(() => {
-      return this.waitForHandler();
+      return waitFor(() => handler.called);
     }).then(() => {
-      expect(this.handler).to.have.been.calledWith("hello", this.testTopic + "/onEvent");
+      expect(handler).to.have.been.calledWith("hello", this.testTopic + "/onEvent");
+    });
+  });
+
+  it("should retrieve retained messages using hash wildcard", function() {
+    const handler = sinon.spy();
+
+    this.client.subscribe(this.testTopic + "/#", handler);
+
+    return waitFor(() => handler.called).then(() => {
+      expect(handler).to.have.been.calledTwice
+        .and.calledWith("bar", this.testTopic + "/foo")
+        .and.calledWith(23, this.testTopic + "/baz");
+    });
+  });
+
+  it("should retrieve retained messages using plus wildcard", function() {
+    const handler = sinon.spy();
+
+    this.client.subscribe(this.testTopic + "/+", handler);
+
+    return waitFor(() => handler.called).then(() => {
+      expect(handler).to.have.been.calledTwice
+        .and.calledWith("bar", this.testTopic + "/foo")
+        .and.calledWith(23, this.testTopic + "/baz");
     });
   });
 });
