@@ -38,15 +38,19 @@ class ClientWrapper {
   };
 
   handleMessage(topic, json, packet) {
-    const payload = JSON.parse(json);
+    try {
+      const payload = JSON.parse(json);
 
-    Object.keys(this.subscriptions).forEach((key) => {
-      this.subscriptions[key].forEach(function({handler, regexp}) {
-        if (regexp.test(topic)) {
-          handler(payload, topic, packet);
-        }
+      Object.keys(this.subscriptions).forEach((key) => {
+        this.subscriptions[key].forEach(({handler, regexp}) => {
+          if (regexp.test(topic)) {
+            handler(payload, topic, packet);
+          }
+        });
       });
-    });
+    } catch (error) {
+      // ignore exceptions during JSON parsing
+    }
   }
 }
 

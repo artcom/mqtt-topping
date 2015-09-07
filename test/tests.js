@@ -67,25 +67,35 @@ describe("Topping MQTT Client", function() {
 
   it("should retrieve retained messages using hash wildcard", function() {
     const handler = sinon.spy();
-
     this.client.subscribe(this.testTopic + "/#", handler);
 
-    return waitFor(() => handler.called).then(() => {
-      expect(handler).to.have.been.calledTwice
-        .and.calledWith("bar", this.testTopic + "/foo")
-        .and.calledWith(23, this.testTopic + "/baz");
+    return waitFor(() => handler.calledTwice).then(() => {
+      expect(handler).to.have.been
+        .calledWith("bar", this.testTopic + "/foo")
+        .calledWith(23, this.testTopic + "/baz");
     });
   });
 
   it("should retrieve retained messages using plus wildcard", function() {
     const handler = sinon.spy();
-
     this.client.subscribe(this.testTopic + "/+", handler);
 
-    return waitFor(() => handler.called).then(() => {
-      expect(handler).to.have.been.calledTwice
-        .and.calledWith("bar", this.testTopic + "/foo")
-        .and.calledWith(23, this.testTopic + "/baz");
+    return waitFor(() => handler.calledTwice).then(() => {
+      expect(handler).to.have.been
+        .calledWith("bar", this.testTopic + "/foo")
+        .calledWith(23, this.testTopic + "/baz");
+    });
+  });
+
+  it("should ignore malformed JSON payloads", function() {
+    const handler = sinon.spy();
+
+    return this.client.subscribe(this.testTopic + "/onEvent", handler).then(() => {
+      this.client.client.publish(this.testTopic + "/onEvent", "{g:rbl!");
+      this.client.client.publish(this.testTopic + "/onEvent", "42");
+      return waitFor(() => handler.called);
+    }).then(() => {
+      expect(handler).to.have.been.calledOnce.and.calledWith(42, this.testTopic + "/onEvent");
     });
   });
 });

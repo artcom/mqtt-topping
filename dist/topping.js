@@ -60,18 +60,24 @@ var ClientWrapper = (function () {
     value: function handleMessage(topic, json, packet) {
       var _this3 = this;
 
-      var payload = JSON.parse(json);
+      try {
+        (function () {
+          var payload = JSON.parse(json);
 
-      Object.keys(this.subscriptions).forEach(function (key) {
-        _this3.subscriptions[key].forEach(function (_ref) {
-          var handler = _ref.handler;
-          var regexp = _ref.regexp;
+          Object.keys(_this3.subscriptions).forEach(function (key) {
+            _this3.subscriptions[key].forEach(function (_ref) {
+              var handler = _ref.handler;
+              var regexp = _ref.regexp;
 
-          if (regexp.test(topic)) {
-            handler(payload, topic, packet);
-          }
-        });
-      });
+              if (regexp.test(topic)) {
+                handler(payload, topic, packet);
+              }
+            });
+          });
+        })();
+      } catch (error) {
+        // ignore exceptions during JSON parsing
+      }
     }
   }]);
 
