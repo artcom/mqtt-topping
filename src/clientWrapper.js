@@ -1,3 +1,4 @@
+import _ from "lodash";
 import mqtt from "mqtt";
 
 import {isEventOrCommand, topicRegexp} from "./helpers";
@@ -21,15 +22,17 @@ export default class ClientWrapper {
 
   subscribe(topic, handler) {
     return new Promise((resolve, reject) => {
-      const regexp = topicRegexp(topic);
       let subscribe = false;
 
       if (!this.subscriptions[topic]) {
-        this.subscriptions[topic] = [];
         subscribe = true;
+        this.subscriptions[topic] = {
+          regexp: topicRegexp(topic),
+          handlers: []
+        };
       }
 
-      this.subscriptions[topic].push({handler, regexp});
+      this.subscriptions[topic].handlers.push(handler);
 
       if (subscribe && this.isConnected) {
         this.client.subscribe(topic, resolve);
@@ -55,12 +58,12 @@ export default class ClientWrapper {
     try {
       const payload = JSON.parse(json);
 
-      Object.keys(this.subscriptions).forEach((key) => {
-        this.subscriptions[key].forEach(({handler, regexp}) => {
-          if (regexp.test(topic)) {
+      _.forOwn(this.subscriptions, (subscription) => {
+        if (subscription.regexp.test(topic)) {
+          subscription.handlers.forEach((handler) => {
             handler(payload, topic, packet);
-          }
-        });
+          });
+        }
       });
     } catch (error) {
       // ignore exceptions during JSON parsing
