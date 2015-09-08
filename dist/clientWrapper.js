@@ -6,17 +6,25 @@ Object.defineProperty(exports, "__esModule", {
 
 var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
 
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { "default": obj }; }
+
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var _mqtt = require("mqtt");
+
+var _mqtt2 = _interopRequireDefault(_mqtt);
 
 var _helpers = require("./helpers");
 
 var ClientWrapper = (function () {
-  function ClientWrapper(client) {
+  function ClientWrapper(uri) {
     _classCallCheck(this, ClientWrapper);
 
-    this.client = client;
+    this.client = _mqtt2["default"].connect(uri);
     this.subscriptions = {};
 
+    this.client.on("connect", this.handleConnect.bind(this));
+    this.client.on("close", this.handleClose.bind(this));
     this.client.on("message", this.handleMessage.bind(this));
   }
 
@@ -46,7 +54,7 @@ var ClientWrapper = (function () {
 
         _this2.subscriptions[topic].push({ handler: handler, regexp: regexp });
 
-        if (subscribe) {
+        if (subscribe && _this2.isConnected) {
           _this2.client.subscribe(topic, resolve);
         } else {
           resolve();
@@ -54,16 +62,32 @@ var ClientWrapper = (function () {
       });
     }
   }, {
+    key: "handleConnect",
+    value: function handleConnect() {
+      var _this3 = this;
+
+      this.isConnected = true;
+
+      Object.keys(this.subscriptions).forEach(function (topic) {
+        _this3.client.subscribe(topic);
+      });
+    }
+  }, {
+    key: "handleClose",
+    value: function handleClose() {
+      this.isConnected = false;
+    }
+  }, {
     key: "handleMessage",
     value: function handleMessage(topic, json, packet) {
-      var _this3 = this;
+      var _this4 = this;
 
       try {
         (function () {
           var payload = JSON.parse(json);
 
-          Object.keys(_this3.subscriptions).forEach(function (key) {
-            _this3.subscriptions[key].forEach(function (_ref) {
+          Object.keys(_this4.subscriptions).forEach(function (key) {
+            _this4.subscriptions[key].forEach(function (_ref) {
               var handler = _ref.handler;
               var regexp = _ref.regexp;
 

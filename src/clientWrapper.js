@@ -1,10 +1,14 @@
+import mqtt from "mqtt";
+
 import {isEventOrCommand, topicRegexp} from "./helpers";
 
 export default class ClientWrapper {
-  constructor(client) {
-    this.client = client;
+  constructor(uri) {
+    this.client = mqtt.connect(uri);
     this.subscriptions = {};
 
+    this.client.on("connect", this.handleConnect.bind(this));
+    this.client.on("close", this.handleClose.bind(this));
     this.client.on("message", this.handleMessage.bind(this));
   }
 
@@ -27,13 +31,25 @@ export default class ClientWrapper {
 
       this.subscriptions[topic].push({handler, regexp});
 
-      if (subscribe) {
+      if (subscribe && this.isConnected) {
         this.client.subscribe(topic, resolve);
       } else {
         resolve();
       }
     });
   };
+
+  handleConnect() {
+    this.isConnected = true;
+
+    Object.keys(this.subscriptions).forEach((topic) => {
+      this.client.subscribe(topic);
+    });
+  }
+
+  handleClose() {
+    this.isConnected = false;
+  }
 
   handleMessage(topic, json, packet) {
     try {

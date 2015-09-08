@@ -30,10 +30,10 @@ function waitFor(condition, timeout=2000) {
 
 describe("MQTT Client", function() {
   beforeEach(function() {
+    this.client = topping.connect(brokerUri);
     this.testTopic = "test/topping-" + Date.now();
 
-    return topping.connect(brokerUri).then((client) => {
-      this.client = client;
+    return waitFor(() => this.client.isConnected).then(() => {
       return this.client.publish(this.testTopic + "/foo", "bar");
     }).then(() => {
       return this.client.publish(this.testTopic + "/baz", 23);
