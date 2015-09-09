@@ -42,6 +42,23 @@ export default class ClientWrapper {
     });
   };
 
+  unsubscribe(topic, handler) {
+    return new Promise((resolve, reject) => {
+      const subscription = this.subscriptions[topic];
+
+      if (subscription) {
+        subscription.handlers = _.without(subscription.handlers, handler);
+
+        if (_.isEmpty(subscription.handlers)) {
+          this.client.unsubscribe(topic, resolve);
+          delete this.subscriptions[topic];
+        } else {
+          resolve();
+        }
+      }
+    });
+  }
+
   handleConnect() {
     this.isConnected = true;
 

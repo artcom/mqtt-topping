@@ -98,4 +98,27 @@ describe("MQTT Client", function() {
       expect(handler).to.have.been.calledOnce.and.calledWith(42, this.testTopic + "/onEvent");
     });
   });
+
+  it("should not receive messages after unsubscribing", function() {
+    const handler = sinon.spy();
+
+    return this.client.subscribe(this.testTopic + "/onEvent", handler).then(() => {
+      return this.client.publish(this.testTopic + "/onEvent", "hello");
+    }).then(() => {
+      return waitFor(() => handler.called);
+    }).then(() => {
+      return this.client.unsubscribe(this.testTopic + "/onEvent", handler);
+    }).then(() => {
+      return this.client.publish(this.testTopic + "/onEvent", "goodbye");
+    }).then(() => {
+      return this.client.subscribe(this.testTopic + "/onEvent", handler);
+    }).then(() => {
+      return this.client.publish(this.testTopic + "/onEvent", "hello again");
+    }).then(() => {
+      return waitFor(() => handler.called);
+    }).then(() => {
+      expect(handler).not.to.have.been.calledWith("goodbye");
+      expect(handler).to.have.been.calledWith("hello again");
+    });
+  });
 });

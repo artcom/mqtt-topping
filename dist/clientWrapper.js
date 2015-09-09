@@ -10,6 +10,10 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { "d
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
+var _lodash = require("lodash");
+
+var _lodash2 = _interopRequireDefault(_lodash);
+
 var _mqtt = require("mqtt");
 
 var _mqtt2 = _interopRequireDefault(_mqtt);
@@ -44,15 +48,17 @@ var ClientWrapper = (function () {
       var _this2 = this;
 
       return new Promise(function (resolve, reject) {
-        var regexp = (0, _helpers.topicRegexp)(topic);
         var subscribe = false;
 
         if (!_this2.subscriptions[topic]) {
-          _this2.subscriptions[topic] = [];
           subscribe = true;
+          _this2.subscriptions[topic] = {
+            regexp: (0, _helpers.topicRegexp)(topic),
+            handlers: []
+          };
         }
 
-        _this2.subscriptions[topic].push({ handler: handler, regexp: regexp });
+        _this2.subscriptions[topic].handlers.push(handler);
 
         if (subscribe && _this2.isConnected) {
           _this2.client.subscribe(topic, resolve);
@@ -62,14 +68,34 @@ var ClientWrapper = (function () {
       });
     }
   }, {
+    key: "unsubscribe",
+    value: function unsubscribe(topic, handler) {
+      var _this3 = this;
+
+      return new Promise(function (resolve, reject) {
+        var subscription = _this3.subscriptions[topic];
+
+        if (subscription) {
+          subscription.handlers = _lodash2["default"].without(subscription.handlers, handler);
+
+          if (_lodash2["default"].isEmpty(subscription.handlers)) {
+            _this3.client.unsubscribe(topic, resolve);
+            delete _this3.subscriptions[topic];
+          } else {
+            resolve();
+          }
+        }
+      });
+    }
+  }, {
     key: "handleConnect",
     value: function handleConnect() {
-      var _this3 = this;
+      var _this4 = this;
 
       this.isConnected = true;
 
       Object.keys(this.subscriptions).forEach(function (topic) {
-        _this3.client.subscribe(topic);
+        _this4.client.subscribe(topic);
       });
     }
   }, {
@@ -80,21 +106,18 @@ var ClientWrapper = (function () {
   }, {
     key: "handleMessage",
     value: function handleMessage(topic, json, packet) {
-      var _this4 = this;
+      var _this5 = this;
 
       try {
         (function () {
           var payload = JSON.parse(json);
 
-          Object.keys(_this4.subscriptions).forEach(function (key) {
-            _this4.subscriptions[key].forEach(function (_ref) {
-              var handler = _ref.handler;
-              var regexp = _ref.regexp;
-
-              if (regexp.test(topic)) {
+          _lodash2["default"].forOwn(_this5.subscriptions, function (subscription) {
+            if (subscription.regexp.test(topic)) {
+              subscription.handlers.forEach(function (handler) {
                 handler(payload, topic, packet);
-              }
-            });
+              });
+            }
           });
         })();
       } catch (error) {
