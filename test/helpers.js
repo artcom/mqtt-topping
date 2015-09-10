@@ -9,6 +9,9 @@ describe("Helpers", function() {
     expect(isEventOrCommand("foo/bar/baz")).to.be.false;
     expect(isEventOrCommand("foo/bar/onbaz")).to.be.false;
     expect(isEventOrCommand("foo/bar/dobaz")).to.be.false;
+    expect(isEventOrCommand("foo/bar/door")).to.be.false;
+    expect(isEventOrCommand("foo/bar/onwards")).to.be.false;
+
     expect(isEventOrCommand("foo/bar/onBaz")).to.be.true;
     expect(isEventOrCommand("foo/bar/doBaz")).to.be.true;
   });
@@ -40,6 +43,7 @@ describe("Helpers", function() {
     expect(re.test("foo/bar/bazinga")).to.be.true;
 
     expect(re.test("foo/bar")).to.be.false;
+    expect(re.test("foo/bar/ba/zin/ga")).to.be.false;
     expect(re.test("foo/lala/baz")).to.be.false;
   });
 
@@ -49,6 +53,7 @@ describe("Helpers", function() {
     expect(re.test("foo/bar/baz")).to.be.true;
     expect(re.test("foo/bar/bazinga")).to.be.true;
     expect(re.test("foo/bar/ba")).to.be.true;
+    expect(re.test("foo/bar/ba/zin/ga")).to.be.true;
     expect(re.test("foo/bar")).to.be.true;
 
     expect(re.test("foo/barista")).to.be.false;
