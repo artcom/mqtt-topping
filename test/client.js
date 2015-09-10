@@ -1,6 +1,5 @@
 /* eslint-env mocha */
 
-import async from "async";
 import chai, {expect} from "chai";
 import sinon from "sinon";
 import sinonChai from "sinon-chai";
