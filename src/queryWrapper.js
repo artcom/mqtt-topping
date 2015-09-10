@@ -6,7 +6,11 @@ export default class QueryWrapper {
     this.queryUri = uri + "/query";
   }
 
-  list(topic) {
+  topic(topic) {
+    return this.sendQuery({ topic }).then(({payload}) => JSON.parse(payload));
+  }
+
+  subtopics(topic) {
     return this.sendQuery({ topic, depth: 1 }).then(({children}) => {
       return _(children || [])
         .map((child) => [_(child.topic).split("/").last(), JSON.parse(child.payload)])

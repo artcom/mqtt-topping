@@ -26,10 +26,18 @@ var QueryWrapper = (function () {
   }
 
   _createClass(QueryWrapper, [{
-    key: "list",
-    value: function list(topic) {
-      return this.sendQuery({ topic: topic, depth: 1 }).then(function (_ref) {
-        var children = _ref.children;
+    key: "topic",
+    value: function topic(_topic) {
+      return this.sendQuery({ topic: _topic }).then(function (_ref) {
+        var payload = _ref.payload;
+        return JSON.parse(payload);
+      });
+    }
+  }, {
+    key: "subtopics",
+    value: function subtopics(topic) {
+      return this.sendQuery({ topic: topic, depth: 1 }).then(function (_ref2) {
+        var children = _ref2.children;
 
         return (0, _lodash2["default"])(children || []).map(function (child) {
           return [(0, _lodash2["default"])(child.topic).split("/").last(), JSON.parse(child.payload)];
@@ -39,8 +47,8 @@ var QueryWrapper = (function () {
   }, {
     key: "sendQuery",
     value: function sendQuery(query) {
-      return _axios2["default"].post(this.queryUri, query).then(function (_ref2) {
-        var data = _ref2.data;
+      return _axios2["default"].post(this.queryUri, query).then(function (_ref3) {
+        var data = _ref3.data;
         return data;
       });
     }
