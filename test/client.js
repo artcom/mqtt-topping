@@ -54,13 +54,14 @@ describe("MQTT Client", function() {
 
   it("should retrieve non-retained messages", function() {
     const handler = sinon.spy();
+    const eventTopic = this.testTopic + "/onEvent";
 
-    return this.client.subscribe(this.testTopic + "/onEvent", handler).then(() => {
-      return this.client.publish(this.testTopic + "/onEvent", "hello");
+    return this.client.subscribe(eventTopic, handler).then(() => {
+      return this.client.publish(eventTopic, "hello");
     }).then(() => {
       return waitFor(() => handler.called);
     }).then(() => {
-      expect(handler).to.have.been.calledWith("hello", this.testTopic + "/onEvent");
+      expect(handler).to.have.been.calledWith("hello", eventTopic);
     });
   });
 
@@ -88,31 +89,33 @@ describe("MQTT Client", function() {
 
   it("should ignore malformed JSON payloads", function() {
     const handler = sinon.spy();
+    const eventTopic = this.testTopic + "/onEvent";
 
-    return this.client.subscribe(this.testTopic + "/onEvent", handler).then(() => {
-      this.client.client.publish(this.testTopic + "/onEvent", "{g:rbl!");
-      this.client.client.publish(this.testTopic + "/onEvent", "42");
+    return this.client.subscribe(eventTopic, handler).then(() => {
+      this.client.client.publish(eventTopic, "{g:rbl!");
+      this.client.client.publish(eventTopic, "42");
       return waitFor(() => handler.called);
     }).then(() => {
-      expect(handler).to.have.been.calledOnce.and.calledWith(42, this.testTopic + "/onEvent");
+      expect(handler).to.have.been.calledOnce.and.calledWith(42, eventTopic);
     });
   });
 
   it("should not receive messages after unsubscribing", function() {
     const handler = sinon.spy();
+    const eventTopic = this.testTopic + "/onEvent";
 
-    return this.client.subscribe(this.testTopic + "/onEvent", handler).then(() => {
-      return this.client.publish(this.testTopic + "/onEvent", "hello");
+    return this.client.subscribe(eventTopic, handler).then(() => {
+      return this.client.publish(eventTopic, "hello");
     }).then(() => {
       return waitFor(() => handler.called);
     }).then(() => {
-      return this.client.unsubscribe(this.testTopic + "/onEvent", handler);
+      return this.client.unsubscribe(eventTopic, handler);
     }).then(() => {
-      return this.client.publish(this.testTopic + "/onEvent", "goodbye");
+      return this.client.publish(eventTopic, "goodbye");
     }).then(() => {
-      return this.client.subscribe(this.testTopic + "/onEvent", handler);
+      return this.client.subscribe(eventTopic, handler);
     }).then(() => {
-      return this.client.publish(this.testTopic + "/onEvent", "hello again");
+      return this.client.publish(eventTopic, "hello again");
     }).then(() => {
       return waitFor(() => handler.called);
     }).then(() => {
