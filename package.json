@@ -1,6 +1,6 @@
 {
   "name": "mqtt-topping",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Syntactical sugar on top of the MQTT client cake",
   "files": [
     "dist/"
@@ -10,9 +10,9 @@
     "prepublish": "babel src --out-dir dist",
     "test": "mocha --compilers js:babel/register"
   },
-  "repository" : {
-    "type" : "git",
-    "url" : "https://github.com/artcom/mqtt-topping.git"
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/artcom/mqtt-topping.git"
   },
   "dependencies": {
     "axios": "^0.5.4",
