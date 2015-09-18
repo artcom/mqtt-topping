@@ -40,4 +40,9 @@ describe("HTTP Query API", function() {
     const query = this.query.subtopics(this.testTopic + "/more");
     return expect(query).to.eventually.deep.equal({ one: 1, two: 2 });
   });
+
+  it("should query subtopics with payload only", function() {
+    const query = this.query.subtopics(this.testTopic);
+    return expect(query).to.eventually.deep.equal({ foo: "bar", baz: 23 });
+  });
 });

@@ -13,6 +13,7 @@ export default class QueryWrapper {
   subtopics(topic) {
     return this.sendQuery({ topic, depth: 1 }).then(({children}) => {
       return _(children || [])
+        .filter((child) => child.payload)
         .map((child) => [_(child.topic).split("/").last(), JSON.parse(child.payload)])
         .zipObject()
         .value();
