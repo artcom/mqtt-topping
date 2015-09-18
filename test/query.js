@@ -45,4 +45,9 @@ describe("HTTP Query API", function() {
     const query = this.query.subtopics(this.testTopic);
     return expect(query).to.eventually.deep.equal({ foo: "bar", baz: 23 });
   });
+
+  it("should query subtopic names", function() {
+    const query = this.query.subtopicNames(this.testTopic);
+    return expect(query).to.eventually.have.members(["foo", "baz", "more"]);
+  });
 });
