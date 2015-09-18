@@ -4,32 +4,17 @@ import chai, {expect} from "chai";
 import sinon from "sinon";
 import sinonChai from "sinon-chai";
 
+import {waitFor} from "./testHelpers";
 import topping from "../src/topping";
 
 chai.use(sinonChai);
 
-const brokerUri = process.env.BROKER || "mqtt://localhost";
-
-function waitFor(condition, timeout=2000) {
-  return new Promise(function(resolve, reject) {
-    const start = Date.now();
-    const interval = setInterval(function() {
-      const elapsed = Date.now() - start;
-
-      if (elapsed > timeout) {
-        clearInterval(interval);
-        reject(new Error("Timeout"));
-      } else if (condition()) {
-        clearInterval(interval);
-        resolve();
-      }
-    }, 20);
-  });
-};
+const tcpBrokerUri = process.env.TCP_BROKER_URI || "tcp://localhost";
+console.log(tcpBrokerUri);
 
 describe("MQTT Client", function() {
   beforeEach(function() {
-    this.client = topping.connect(brokerUri);
+    this.client = topping.connect(tcpBrokerUri);
     this.testTopic = "test/topping-" + Date.now();
 
     return waitFor(() => this.client.isConnected).then(() => {
