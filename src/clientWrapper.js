@@ -21,6 +21,12 @@ export default class ClientWrapper {
     });
   }
 
+  unpublish(topic) {
+    return new Promise((resolve, reject) => {
+      this.client.publish(topic, null, { retain: true, qos: 2 }, resolve);
+    });
+  }
+
   subscribe(topic, handler) {
     return new Promise((resolve, reject) => {
       let subscribe = false;
