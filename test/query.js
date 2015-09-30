@@ -47,8 +47,13 @@ describe("HTTP Query API", function() {
   });
 
   it("should query subtopics with depth==2", function() {
-    const query = this.query.subtopics(this.testTopic, { depth: 2});
-    return expect(query).to.eventually.deep.equal({ "foo": "bar", "baz": 23, "more/one": 1, "more/two": 2,  });
+    const query = this.query.subtopics(this.testTopic, { depth: 2 });
+    return expect(query).to.eventually.deep.equal({
+      "foo": "bar",
+      "baz": 23,
+      "more/one": 1,
+      "more/two": 2
+    });
   });
 
   it("should query subtopic names", function() {
