@@ -81,10 +81,8 @@ describe("MQTT Client", function() {
     const eventTopic = this.testTopic + "/onEvent";
 
     return this.client.subscribe(eventTopic, handler).then(() => {
-      return this.client.client.publish(eventTopic, "{g:rbl!");
-    }).then(() => {
-      return this.client.client.publish(eventTopic, "42");
-    }).then(() => {
+      this.client.client.publish(eventTopic, "this is invalid JSON");
+      this.client.client.publish(eventTopic, "42");
       return waitFor(() => handler.called);
     }).then(() => {
       expect(handler).to.have.been.calledOnce.and.calledWith(42, eventTopic);
