@@ -75,5 +75,14 @@ describe("HTTP Query API", function() {
       const query = this.query.subtopics(this.testTopic);
       return expect(query).to.be.rejected;
     });
+
+    it("should not fail when JSON parsing is disabled", function() {
+      const query = this.query.subtopics(this.testTopic, { parseJson: false });
+      return expect(query).to.eventually.deep.equal({
+        foo: '"bar"',
+        baz: "23",
+        invalid: "this is invalid JSON"
+      });
+    });
   });
 });

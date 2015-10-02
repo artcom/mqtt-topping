@@ -5,19 +5,19 @@ function lastTopicLevel(topic) {
   return _(topic).split("/").last();
 }
 
-function addTopicsWithPayloadRecursively(topics, result) {
+function addTopicsWithPayloadRecursively(topics, result, parseJson) {
   (topics || []).forEach(function({topic, payload, children}) {
-    if(payload) {
-      result[topic] = JSON.parse(payload);
+    if (payload) {
+      result[topic] = parseJson ? JSON.parse(payload) : payload;
     }
 
-    addTopicsWithPayloadRecursively(children, result);
+    addTopicsWithPayloadRecursively(children, result, parseJson);
   });
 }
 
-function topicsWithPayloadRecursively(topics, topicPathToPrune) {
+function topicsWithPayloadRecursively(topics, topicPathToPrune, parseJson) {
   const result = {};
-  addTopicsWithPayloadRecursively(topics, result);
+  addTopicsWithPayloadRecursively(topics, result, parseJson);
   return _.mapKeys(result, (value, key) => key.substring(topicPathToPrune.length + 1));
 }
 
@@ -32,8 +32,10 @@ export default class QueryWrapper {
 
   subtopics(topic, options = {}) {
     const depth = options.depth || 1;
+    const parseJson = _.isBoolean(options.parseJson) ? options.parseJson : true;
+
     return this.sendQuery({ topic, depth }).then(({children}) => {
-      return topicsWithPayloadRecursively(children, topic);
+      return topicsWithPayloadRecursively(children, topic, parseJson);
     });
   }
 
