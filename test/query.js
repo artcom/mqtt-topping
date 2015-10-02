@@ -60,4 +60,20 @@ describe("HTTP Query API", function() {
     const query = this.query.subtopicNames(this.testTopic);
     return expect(query).to.eventually.have.members(["foo", "baz", "more"]);
   });
+
+  describe("Invalid JSON", function() {
+    beforeEach(function(done) {
+      this.client.client.publish(
+        this.testTopic + "/invalid",
+        "this is invalid JSON",
+        { retain: true },
+        done
+      );
+    });
+
+    it("should fail on invalid JSON", function() {
+      const query = this.query.subtopics(this.testTopic);
+      return expect(query).to.be.rejected;
+    });
+  });
 });
