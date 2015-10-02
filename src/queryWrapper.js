@@ -26,8 +26,12 @@ export default class QueryWrapper {
     this.queryUri = uri + "/query";
   }
 
-  topic(topic) {
-    return this.sendQuery({ topic }).then(({payload}) => JSON.parse(payload));
+  topic(topic, options = {}) {
+    const parseJson = _.isBoolean(options.parseJson) ? options.parseJson : true;
+
+    return this.sendQuery({ topic }).then(({payload}) =>
+      parseJson ? JSON.parse(payload) : payload
+    );
   }
 
   subtopics(topic, options = {}) {

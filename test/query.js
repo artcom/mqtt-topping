@@ -61,7 +61,7 @@ describe("HTTP Query API", function() {
     return expect(query).to.eventually.have.members(["foo", "baz", "more"]);
   });
 
-  describe("Invalid JSON", function() {
+  describe("JSON Parsing", function() {
     beforeEach(function(done) {
       this.client.client.publish(
         this.testTopic + "/invalid",
@@ -71,12 +71,22 @@ describe("HTTP Query API", function() {
       );
     });
 
-    it("should fail on invalid JSON", function() {
+    it("should fail on invalid payloads", function() {
+      const query = this.query.topic(this.testTopic + "/invalid");
+      return expect(query).to.be.rejected;
+    });
+
+    it("should not fail on invalid payloads when parsing is disabled", function() {
+      const query = this.query.topic(this.testTopic + "/invalid", { parseJson: false });
+      return expect(query).to.eventually.deep.equal("this is invalid JSON");
+    });
+
+    it("should fail on invalid subtopic payloads", function() {
       const query = this.query.subtopics(this.testTopic);
       return expect(query).to.be.rejected;
     });
 
-    it("should not fail when JSON parsing is disabled", function() {
+    it("should not fail on invalid subtopic payloads when parsing is disabled", function() {
       const query = this.query.subtopics(this.testTopic, { parseJson: false });
       return expect(query).to.eventually.deep.equal({
         foo: '"bar"',
