@@ -1,22 +1,29 @@
 import _ from "lodash";
 import mqtt from "mqtt";
 
+import QueryWrapper from "./queryWrapper";
 import {isEventOrCommand, topicRegexp} from "./helpers";
 
 export default class ClientWrapper {
-  constructor(uri, options, connectCallback) {
+  constructor(tcpUri, httpUri, options, connectCallback) {
     if (_.isFunction(options)) {
       connectCallback = options;
       options = undefined;
     }
 
-    this.client = mqtt.connect(uri, options);
+    this.client = mqtt.connect(tcpUri, options);
     this.connectCallback = connectCallback;
     this.subscriptions = {};
 
     this.client.on("connect", this.handleConnect.bind(this));
     this.client.on("close", this.handleClose.bind(this));
     this.client.on("message", this.handleMessage.bind(this));
+
+    this.queryWrapper = new QueryWrapper(httpUri);
+  }
+
+  query(query) {
+    return this.queryWrapper.send(query);
   }
 
   publish(topic, payload) {

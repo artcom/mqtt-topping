@@ -17,8 +17,7 @@ console.log(tcpBrokerUri);
 
 describe("MQTT Client", function() {
   beforeEach(function() {
-    this.client = topping.connect(tcpBrokerUri);
-    this.query = topping.query(httpBrokerUri);
+    this.client = topping.connect(tcpBrokerUri, httpBrokerUri);
     this.testTopic = "test/topping-" + Date.now();
 
     return waitFor(() => this.client.isConnected).then(() => {
@@ -115,8 +114,14 @@ describe("MQTT Client", function() {
 
   it("should unpublish messages", function() {
     return this.client.unpublish(this.testTopic + "/foo").then(() => {
-      const query = this.query.subtopics(this.testTopic);
-      return expect(query).to.eventually.deep.equal({ baz: 23 });
+      const query = this.client.query({
+        topic: this.testTopic,
+        depth: 1
+      }).then((result) => result.children);
+
+      return expect(query).to.eventually.deep.equal([
+        { topic: this.testTopic + "/baz", payload: 23 }
+      ]);
     })
   });
 });
