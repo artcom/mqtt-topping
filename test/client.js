@@ -1,20 +1,24 @@
 /* eslint-env mocha */
 
 import chai, {expect} from "chai";
+import chaiAsPromised from "chai-as-promised";
 import sinon from "sinon";
 import sinonChai from "sinon-chai";
 
 import {waitFor} from "./testHelpers";
 import topping from "../src/topping";
 
+chai.use(chaiAsPromised);
 chai.use(sinonChai);
 
+const httpBrokerUri = process.env.HTTP_BROKER_URI || "http://localhost:8080";
 const tcpBrokerUri = process.env.TCP_BROKER_URI || "tcp://localhost";
 console.log(tcpBrokerUri);
 
 describe("MQTT Client", function() {
   beforeEach(function() {
     this.client = topping.connect(tcpBrokerUri);
+    this.query = topping.query(httpBrokerUri);
     this.testTopic = "test/topping-" + Date.now();
 
     return waitFor(() => this.client.isConnected).then(() => {
@@ -77,10 +81,8 @@ describe("MQTT Client", function() {
     const eventTopic = this.testTopic + "/onEvent";
 
     return this.client.subscribe(eventTopic, handler).then(() => {
-      return this.client.client.publish(eventTopic, "{g:rbl!");
-    }).then(() => {
-      return this.client.client.publish(eventTopic, "42");
-    }).then(() => {
+      this.client.client.publish(eventTopic, "this is invalid JSON");
+      this.client.client.publish(eventTopic, "42");
       return waitFor(() => handler.called);
     }).then(() => {
       expect(handler).to.have.been.calledOnce.and.calledWith(42, eventTopic);
@@ -109,5 +111,12 @@ describe("MQTT Client", function() {
       expect(handler).not.to.have.been.calledWith("goodbye");
       expect(handler).to.have.been.calledWith("hello again");
     });
+  });
+
+  it("should unpublish messages", function() {
+    return this.client.unpublish(this.testTopic + "/foo").then(() => {
+      const query = this.query.subtopics(this.testTopic);
+      return expect(query).to.eventually.deep.equal({ baz: 23 });
+    })
   });
 });

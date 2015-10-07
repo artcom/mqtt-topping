@@ -46,8 +46,53 @@ describe("HTTP Query API", function() {
     return expect(query).to.eventually.deep.equal({ foo: "bar", baz: 23 });
   });
 
+  it("should query subtopics with grandchildren", function() {
+    const query = this.query.subtopics(this.testTopic, { depth: 2 });
+    return expect(query).to.eventually.deep.equal({
+      "foo": "bar",
+      "baz": 23,
+      "more/one": 1,
+      "more/two": 2
+    });
+  });
+
   it("should query subtopic names", function() {
     const query = this.query.subtopicNames(this.testTopic);
     return expect(query).to.eventually.have.members(["foo", "baz", "more"]);
+  });
+
+  describe("JSON Parsing", function() {
+    beforeEach(function(done) {
+      this.client.client.publish(
+        this.testTopic + "/invalid",
+        "this is invalid JSON",
+        { retain: true },
+        done
+      );
+    });
+
+    it("should fail on invalid payloads", function() {
+      const query = this.query.topic(this.testTopic + "/invalid");
+      return expect(query).to.be.rejected;
+    });
+
+    it("should not fail on invalid payloads when parsing is disabled", function() {
+      const query = this.query.topic(this.testTopic + "/invalid", { parseJson: false });
+      return expect(query).to.eventually.deep.equal("this is invalid JSON");
+    });
+
+    it("should fail on invalid subtopic payloads", function() {
+      const query = this.query.subtopics(this.testTopic);
+      return expect(query).to.be.rejected;
+    });
+
+    it("should not fail on invalid subtopic payloads when parsing is disabled", function() {
+      const query = this.query.subtopics(this.testTopic, { parseJson: false });
+      return expect(query).to.eventually.deep.equal({
+        foo: '"bar"',
+        baz: "23",
+        invalid: "this is invalid JSON"
+      });
+    });
   });
 });
