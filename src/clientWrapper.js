@@ -4,7 +4,12 @@ import mqtt from "mqtt";
 import {isEventOrCommand, topicRegexp} from "./helpers";
 
 export default class ClientWrapper {
-  constructor(uri, connectCallback, options) {
+  constructor(uri, options, connectCallback) {
+    if (_.isFunction(options)) {
+      connectCallback = options;
+      options = undefined;
+    }
+
     this.client = mqtt.connect(uri, options);
     this.connectCallback = connectCallback;
     this.subscriptions = {};
