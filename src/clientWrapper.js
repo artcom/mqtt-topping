@@ -4,8 +4,8 @@ import mqtt from "mqtt";
 import {isEventOrCommand, topicRegexp} from "./helpers";
 
 export default class ClientWrapper {
-  constructor(uri, connectCallback) {
-    this.client = mqtt.connect(uri);
+  constructor(uri, connectCallback, options) {
+    this.client = mqtt.connect(uri, options);
     this.connectCallback = connectCallback;
     this.subscriptions = {};
 
