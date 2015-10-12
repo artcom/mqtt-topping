@@ -9,6 +9,7 @@ A small wrapper around the MQTT.js client and an API to query retained topics vi
 * `JSON.parse` all incoming payloads
 * Ignore non-JSON payloads
 * Decide whether to retain a message or not depending on the topic name (retained unless topic is prefixed with `on` or `do`)
+* Publishes and subscriptions are send with quality-of-service 2
 
 ### Usage
 
