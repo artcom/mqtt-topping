@@ -47,7 +47,7 @@ export default class ClientWrapper {
       this.subscriptions[topic].handlers.push(handler);
 
       if (subscribe && this.isConnected) {
-        this.client.subscribe(topic, resolve);
+        this.client.subscribe(topic, { qos: 2 }, resolve);
       } else {
         resolve();
       }
@@ -79,7 +79,7 @@ export default class ClientWrapper {
     }
 
     Object.keys(this.subscriptions).forEach((topic) => {
-      this.client.subscribe(topic);
+      this.client.subscribe(topic, { qos: 2 });
     });
   }
 
