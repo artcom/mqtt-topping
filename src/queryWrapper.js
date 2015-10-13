@@ -33,6 +33,8 @@ export default class QueryWrapper {
       }
 
       return data;
+    }).catch(({data}) => {
+      throw data;
     });
   }
 }

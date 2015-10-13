@@ -94,6 +94,19 @@ describe("HTTP Query API", function() {
     ]);
   });
 
+  it("should fail when querying an inexistent topic", function() {
+    const query = this.client.query({ topic: this.testTopic + "/does-not-exist" });
+    return Promise.all([
+      expect(query).to.be.rejected,
+      query.catch((error) => {
+        expect(error).to.deep.equal({
+          topic: this.testTopic + "/does-not-exist",
+          error: 404
+        });
+      })
+    ]);
+  });
+
   describe("JSON Parsing", function() {
     beforeEach(function(done) {
       this.client.client.publish(
