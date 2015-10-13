@@ -16,7 +16,7 @@ A small wrapper around the MQTT.js client and an API to query retained topics vi
 ```javascript
 var topping = require("mqtt-topping");
 
-var client = topping.connect("tcp://broker.example.com");
+var client = topping.connect("tcp://broker.example.com", "http://broker.example.com");
 
 client.subscribe("my/topic", function(payload, topic, packet) {
   console.log("Received Payload " + payload +
@@ -27,23 +27,18 @@ client.subscribe("my/topic", function(payload, topic, packet) {
 
 ## HTTP Query Features
 
-* Get single topic payload
-* Get list of subtopics with payload
+* `JSON.parse` all incoming payloads, unless `parseJson` is set to `false`
 
 ### Usage
 
 ```javascript
-var topping = require("mqtt-topping");
-
-var query = topping.query("http://broker.example.com");
-
-query.topic("my/topic").then(function(payload) {
-  console.log("Payload is " + payload);
+client.query({ topic: "my/topic" }).then(function(result) {
+  console.log("Payload is " + result.payload);
 });
 
-query.subtopics("my/topic").then(function(subtopics) {
-  for (var subtopic in subtopics) {
-    console.log("subtopic " + subtopic + " has payload " + subtopics[subtopic]);
-  }
+client.query({ topic: "my/topic", depth: 2, flatten: true }).then(function(results) {
+  results.forEach(function(result) {
+    console.log("topic " + result.topic + " has payload " + result.payload);
+  });
 });
 ```
