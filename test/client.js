@@ -79,12 +79,23 @@ describe("MQTT Client", function() {
     const handler = sinon.spy();
     const eventTopic = this.testTopic + "/onEvent";
 
+    const consoleLog = console.log;
+    console.log = sinon.spy();
+
     return this.client.subscribe(eventTopic, handler).then(() => {
       this.client.client.publish(eventTopic, "this is invalid JSON");
       this.client.client.publish(eventTopic, "42");
       return waitFor(() => handler.called);
     }).then(() => {
       expect(handler).to.have.been.calledOnce.and.calledWith(42, eventTopic);
+      expect(console.log).to.have.been.calledWith(
+        sinon.match(eventTopic).and(sinon.match("this is invalid JSON"))
+      );
+
+      console.log = consoleLog;
+    }).catch((error) => {
+      console.log = consoleLog;
+      throw error;
     });
   });
 

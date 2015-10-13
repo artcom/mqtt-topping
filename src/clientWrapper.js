@@ -95,9 +95,16 @@ export default class ClientWrapper {
   }
 
   handleMessage(topic, json, packet) {
-    try {
-      const payload = JSON.parse(json);
+    let payload;
 
+    try {
+      payload = JSON.parse(json);
+    } catch (error) {
+      console.log(`Ignoring MQTT message for topic '${topic}' ` +
+                  `with invalid JSON payload '${json}'`);
+    }
+
+    if (payload !== undefined) {
       _.forOwn(this.subscriptions, (subscription) => {
         if (subscription.regexp.test(topic)) {
           subscription.handlers.forEach((handler) => {
@@ -105,8 +112,6 @@ export default class ClientWrapper {
           });
         }
       });
-    } catch (error) {
-      // ignore exceptions during JSON parsing
     }
   }
 }
