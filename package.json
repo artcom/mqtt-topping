@@ -1,6 +1,6 @@
 {
   "name": "mqtt-topping",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Syntactical sugar on top of the MQTT client cake",
   "files": [
     "dist/"
