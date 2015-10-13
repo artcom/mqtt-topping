@@ -16,8 +16,7 @@ const tcpBrokerUri = process.env.TCP_BROKER_URI || "tcp://localhost";
 
 describe("HTTP Query API", function() {
   beforeEach(function() {
-    this.client = topping.connect(tcpBrokerUri);
-    this.query = topping.query(httpBrokerUri);
+    this.client = topping.connect(tcpBrokerUri, httpBrokerUri);
     this.testTopic = "test/topping-" + Date.now();
 
     return waitFor(() => this.client.isConnected).then(() => {
@@ -32,33 +31,80 @@ describe("HTTP Query API", function() {
   });
 
   it("should query single topics", function() {
-    const query = this.query.topic(this.testTopic + "/foo");
-    return expect(query).to.eventually.equal("bar");
-  });
-
-  it("should query subtopics with payload", function() {
-    const query = this.query.subtopics(this.testTopic + "/more");
-    return expect(query).to.eventually.deep.equal({ one: 1, two: 2 });
-  });
-
-  it("should query subtopics with payload only", function() {
-    const query = this.query.subtopics(this.testTopic);
-    return expect(query).to.eventually.deep.equal({ foo: "bar", baz: 23 });
-  });
-
-  it("should query subtopics with grandchildren", function() {
-    const query = this.query.subtopics(this.testTopic, { depth: 2 });
+    const query = this.client.query({ topic: this.testTopic + "/foo" });
     return expect(query).to.eventually.deep.equal({
-      "foo": "bar",
-      "baz": 23,
-      "more/one": 1,
-      "more/two": 2
+      topic: this.testTopic + "/foo",
+      payload: "bar"
     });
   });
 
-  it("should query subtopic names", function() {
-    const query = this.query.subtopicNames(this.testTopic);
-    return expect(query).to.eventually.have.members(["foo", "baz", "more"]);
+  it("should query wildcard topics", function() {
+    const query = this.client.query({ topic: this.testTopic + "/+" });
+    return expect(query).to.eventually.deep.equal([
+      { topic: this.testTopic + "/baz", payload: 23 },
+      { topic: this.testTopic + "/foo", payload: "bar" },
+      { topic: this.testTopic + "/more" }
+    ]);
+  });
+
+  it("should query subtopics", function() {
+    const query = this.client.query({ topic: this.testTopic + "/more", depth: 1 });
+    return expect(query).to.eventually.deep.equal({
+      topic: this.testTopic + "/more",
+      children: [
+        { topic: this.testTopic + "/more/one", payload: 1 },
+        { topic: this.testTopic + "/more/two", payload: 2 }
+      ]
+    });
+  });
+
+  it("should query subtopics with grandchildren", function() {
+    const query = this.client.query({ topic: this.testTopic, depth: 2 });
+    return expect(query).to.eventually.deep.equal({
+      topic: this.testTopic,
+      children: [
+        {
+          topic: this.testTopic + "/baz",
+          payload: 23
+        },
+        {
+          topic: this.testTopic + "/foo",
+          payload: "bar"
+        },
+        {
+          topic: this.testTopic + "/more",
+          children: [
+            { topic: this.testTopic + "/more/one", payload: 1 },
+            { topic: this.testTopic + "/more/two", payload: 2 }
+          ]
+        }
+      ]
+    });
+  });
+
+  it("should flatten query results", function() {
+    const query = this.client.query({ topic: this.testTopic, depth: 2, flatten: true });
+    return expect(query).to.eventually.deep.equal([
+      { topic: this.testTopic },
+      { topic: this.testTopic + "/baz", payload: 23 },
+      { topic: this.testTopic + "/foo", payload: "bar" },
+      { topic: this.testTopic + "/more" },
+      { topic: this.testTopic + "/more/one", payload: 1 },
+      { topic: this.testTopic + "/more/two", payload: 2 }
+    ]);
+  });
+
+  it("should fail when querying an inexistent topic", function() {
+    const query = this.client.query({ topic: this.testTopic + "/does-not-exist" });
+    return Promise.all([
+      expect(query).to.be.rejected,
+      query.catch((error) => {
+        expect(error).to.deep.equal({
+          topic: this.testTopic + "/does-not-exist",
+          error: 404
+        });
+      })
+    ]);
   });
 
   describe("JSON Parsing", function() {
@@ -72,26 +118,15 @@ describe("HTTP Query API", function() {
     });
 
     it("should fail on invalid payloads", function() {
-      const query = this.query.topic(this.testTopic + "/invalid");
+      const query = this.client.query({ topic: this.testTopic + "/invalid" });
       return expect(query).to.be.rejected;
     });
 
     it("should not fail on invalid payloads when parsing is disabled", function() {
-      const query = this.query.topic(this.testTopic + "/invalid", { parseJson: false });
-      return expect(query).to.eventually.deep.equal("this is invalid JSON");
-    });
-
-    it("should fail on invalid subtopic payloads", function() {
-      const query = this.query.subtopics(this.testTopic);
-      return expect(query).to.be.rejected;
-    });
-
-    it("should not fail on invalid subtopic payloads when parsing is disabled", function() {
-      const query = this.query.subtopics(this.testTopic, { parseJson: false });
+      const query = this.client.query({ topic: this.testTopic + "/invalid", parseJson: false });
       return expect(query).to.eventually.deep.equal({
-        foo: '"bar"',
-        baz: "23",
-        invalid: "this is invalid JSON"
+        topic: this.testTopic + "/invalid",
+        payload: "this is invalid JSON"
       });
     });
   });

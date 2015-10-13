@@ -1,24 +1,22 @@
 import _ from "lodash";
 import axios from "axios";
 
-function lastTopicLevel(topic) {
-  return _(topic).split("/").last();
+function parsePayloads(result) {
+  if (_.isArray(result)) {
+    result.forEach(parsePayloads);
+  } else {
+    return parsePayload(result);
+  }
 }
 
-function addTopicsWithPayloadRecursively(topics, result, parseJson) {
-  (topics || []).forEach(function({topic, payload, children}) {
-    if (payload) {
-      result[topic] = parseJson ? JSON.parse(payload) : payload;
-    }
+function parsePayload(result) {
+  if (result.payload) {
+    result.payload = JSON.parse(result.payload);
+  }
 
-    addTopicsWithPayloadRecursively(children, result, parseJson);
-  });
-}
-
-function topicsWithPayloadRecursively(topics, topicPathToPrune, parseJson) {
-  const result = {};
-  addTopicsWithPayloadRecursively(topics, result, parseJson);
-  return _.mapKeys(result, (value, key) => key.substring(topicPathToPrune.length + 1));
+  if (result.children) {
+    result.children.map(parsePayloads);
+  }
 }
 
 export default class QueryWrapper {
@@ -26,30 +24,17 @@ export default class QueryWrapper {
     this.queryUri = uri + "/query";
   }
 
-  topic(topic, options = {}) {
-    const parseJson = _.isBoolean(options.parseJson) ? options.parseJson : true;
+  send(query) {
+    const parseJson = _.isBoolean(query.parseJson) ? query.parseJson : true;
 
-    return this.sendQuery({ topic }).then(({payload}) =>
-      parseJson ? JSON.parse(payload) : payload
-    );
-  }
+    return axios.post(this.queryUri, _.omit(query, "parseJson")).then(({data}) => {
+      if (parseJson) {
+        parsePayloads(data);
+      }
 
-  subtopics(topic, options = {}) {
-    const depth = options.depth || 1;
-    const parseJson = _.isBoolean(options.parseJson) ? options.parseJson : true;
-
-    return this.sendQuery({ topic, depth }).then(({children}) => {
-      return topicsWithPayloadRecursively(children, topic, parseJson);
+      return data;
+    }).catch(({data}) => {
+      throw data;
     });
-  }
-
-  subtopicNames(topic) {
-    return this.sendQuery({ topic, depth: 1}).then(({children}) =>
-      children.map((child) => lastTopicLevel(child.topic))
-    );
-  }
-
-  sendQuery(query) {
-    return axios.post(this.queryUri, query).then(({data}) => data);
   }
 }

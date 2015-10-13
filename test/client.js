@@ -17,8 +17,7 @@ console.log(tcpBrokerUri);
 
 describe("MQTT Client", function() {
   beforeEach(function() {
-    this.client = topping.connect(tcpBrokerUri);
-    this.query = topping.query(httpBrokerUri);
+    this.client = topping.connect(tcpBrokerUri, httpBrokerUri);
     this.testTopic = "test/topping-" + Date.now();
 
     return waitFor(() => this.client.isConnected).then(() => {
@@ -80,12 +79,23 @@ describe("MQTT Client", function() {
     const handler = sinon.spy();
     const eventTopic = this.testTopic + "/onEvent";
 
+    const consoleLog = console.log;
+    console.log = sinon.spy();
+
     return this.client.subscribe(eventTopic, handler).then(() => {
       this.client.client.publish(eventTopic, "this is invalid JSON");
       this.client.client.publish(eventTopic, "42");
       return waitFor(() => handler.called);
     }).then(() => {
       expect(handler).to.have.been.calledOnce.and.calledWith(42, eventTopic);
+      expect(console.log).to.have.been.calledWith(
+        sinon.match(eventTopic).and(sinon.match("this is invalid JSON"))
+      );
+
+      console.log = consoleLog;
+    }).catch((error) => {
+      console.log = consoleLog;
+      throw error;
     });
   });
 
@@ -115,8 +125,25 @@ describe("MQTT Client", function() {
 
   it("should unpublish messages", function() {
     return this.client.unpublish(this.testTopic + "/foo").then(() => {
-      const query = this.query.subtopics(this.testTopic);
-      return expect(query).to.eventually.deep.equal({ baz: 23 });
-    })
+      const query = this.client.query({
+        topic: this.testTopic,
+        depth: 1
+      }).then((result) => result.children);
+
+      return expect(query).to.eventually.deep.equal([
+        { topic: this.testTopic + "/baz", payload: 23 }
+      ]);
+    });
+  });
+
+  it("should unpublish messages recursively", function() {
+    const query = this.client.unpublishRecursively(this.testTopic).then(() =>
+      this.client.query({ topic: this.testTopic })
+    );
+
+    return Promise.all([
+      expect(query).to.be.rejected,
+      query.catch((error) => expect(error).to.deep.equal({ topic: this.testTopic, error: 404 }))
+    ]);
   });
 });

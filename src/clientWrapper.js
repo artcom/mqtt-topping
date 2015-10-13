@@ -1,22 +1,29 @@
 import _ from "lodash";
 import mqtt from "mqtt";
 
+import QueryWrapper from "./queryWrapper";
 import {isEventOrCommand, topicRegexp} from "./helpers";
 
 export default class ClientWrapper {
-  constructor(uri, options, connectCallback) {
+  constructor(tcpUri, httpUri, options, connectCallback) {
     if (_.isFunction(options)) {
       connectCallback = options;
       options = undefined;
     }
 
-    this.client = mqtt.connect(uri, options);
+    this.client = mqtt.connect(tcpUri, options);
     this.connectCallback = connectCallback;
     this.subscriptions = {};
 
     this.client.on("connect", this.handleConnect.bind(this));
     this.client.on("close", this.handleClose.bind(this));
     this.client.on("message", this.handleMessage.bind(this));
+
+    this.queryWrapper = new QueryWrapper(httpUri);
+  }
+
+  query(query) {
+    return this.queryWrapper.send(query);
   }
 
   publish(topic, payload) {
@@ -29,6 +36,22 @@ export default class ClientWrapper {
   unpublish(topic) {
     return new Promise((resolve, reject) => {
       this.client.publish(topic, null, { retain: true, qos: 2 }, resolve);
+    });
+  }
+
+  unpublishRecursively(topic) {
+    return this.query({
+      topic,
+      depth: -1,
+      flatten: true,
+      parseJson: false
+    }).then((subtopics) => {
+      const unpublishPromises = _(subtopics)
+        .filter((subtopic) => subtopic.payload)
+        .map((subtopic) => this.unpublish(subtopic.topic))
+        .value();
+
+      return Promise.all(unpublishPromises);
     });
   }
 
@@ -88,9 +111,16 @@ export default class ClientWrapper {
   }
 
   handleMessage(topic, json, packet) {
-    try {
-      const payload = JSON.parse(json);
+    let payload;
 
+    try {
+      payload = JSON.parse(json);
+    } catch (error) {
+      console.log(`Ignoring MQTT message for topic '${topic}' ` +
+                  `with invalid JSON payload '${json}'`);
+    }
+
+    if (payload !== undefined) {
       _.forOwn(this.subscriptions, (subscription) => {
         if (subscription.regexp.test(topic)) {
           subscription.handlers.forEach((handler) => {
@@ -98,8 +128,6 @@ export default class ClientWrapper {
           });
         }
       });
-    } catch (error) {
-      // ignore exceptions during JSON parsing
     }
   }
 }
