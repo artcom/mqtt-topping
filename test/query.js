@@ -82,6 +82,18 @@ describe("HTTP Query API", function() {
     });
   });
 
+  it("should flatten query results", function() {
+    const query = this.client.query({ topic: this.testTopic, depth: 2, flatten: true });
+    return expect(query).to.eventually.deep.equal([
+      { topic: this.testTopic },
+      { topic: this.testTopic + "/baz", payload: 23 },
+      { topic: this.testTopic + "/foo", payload: "bar" },
+      { topic: this.testTopic + "/more" },
+      { topic: this.testTopic + "/more/one", payload: 1 },
+      { topic: this.testTopic + "/more/two", payload: 2 }
+    ]);
+  });
+
   describe("JSON Parsing", function() {
     beforeEach(function(done) {
       this.client.client.publish(
