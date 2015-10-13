@@ -39,6 +39,22 @@ export default class ClientWrapper {
     });
   }
 
+  unpublishRecursively(topic) {
+    return this.query({
+      topic,
+      depth: -1,
+      flatten: true,
+      parseJson: false
+    }).then((subtopics) => {
+      const unpublishPromises = _(subtopics)
+        .filter((subtopic) => subtopic.payload)
+        .map((subtopic) => this.unpublish(subtopic.topic))
+        .value();
+
+      return Promise.all(unpublishPromises);
+    });
+  }
+
   subscribe(topic, handler) {
     return new Promise((resolve, reject) => {
       let subscribe = false;

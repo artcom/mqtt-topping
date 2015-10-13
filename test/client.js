@@ -133,6 +133,17 @@ describe("MQTT Client", function() {
       return expect(query).to.eventually.deep.equal([
         { topic: this.testTopic + "/baz", payload: 23 }
       ]);
-    })
+    });
+  });
+
+  it("should unpublish messages recursively", function() {
+    const query = this.client.unpublishRecursively(this.testTopic).then(() =>
+      this.client.query({ topic: this.testTopic })
+    );
+
+    return Promise.all([
+      expect(query).to.be.rejected,
+      query.catch((error) => expect(error).to.deep.equal({ topic: this.testTopic, error: 404 }))
+    ]);
   });
 });
