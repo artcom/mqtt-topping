@@ -30,81 +30,83 @@ describe("HTTP Query API", function() {
     });
   });
 
-  it("should query single topics", function() {
-    const query = this.client.query({ topic: this.testTopic + "/foo" });
-    return expect(query).to.eventually.deep.equal({
-      topic: this.testTopic + "/foo",
-      payload: "bar"
+  describe("Single Queries", function() {
+    it("should query single topics", function() {
+      const query = this.client.query({ topic: this.testTopic + "/foo" });
+      return expect(query).to.eventually.deep.equal({
+        topic: this.testTopic + "/foo",
+        payload: "bar"
+      });
     });
-  });
 
-  it("should query wildcard topics", function() {
-    const query = this.client.query({ topic: this.testTopic + "/+" });
-    return expect(query).to.eventually.deep.equal([
-      { topic: this.testTopic + "/baz", payload: 23 },
-      { topic: this.testTopic + "/foo", payload: "bar" },
-      { topic: this.testTopic + "/more" }
-    ]);
-  });
+    it("should query wildcard topics", function() {
+      const query = this.client.query({ topic: this.testTopic + "/+" });
+      return expect(query).to.eventually.deep.equal([
+        { topic: this.testTopic + "/baz", payload: 23 },
+        { topic: this.testTopic + "/foo", payload: "bar" },
+        { topic: this.testTopic + "/more" }
+      ]);
+    });
 
-  it("should query subtopics", function() {
-    const query = this.client.query({ topic: this.testTopic + "/more", depth: 1 });
-    return expect(query).to.eventually.deep.equal({
-      topic: this.testTopic + "/more",
-      children: [
+    it("should query subtopics", function() {
+      const query = this.client.query({ topic: this.testTopic + "/more", depth: 1 });
+      return expect(query).to.eventually.deep.equal({
+        topic: this.testTopic + "/more",
+        children: [
+          { topic: this.testTopic + "/more/one", payload: 1 },
+          { topic: this.testTopic + "/more/two", payload: 2 }
+        ]
+      });
+    });
+
+    it("should query subtopics with grandchildren", function() {
+      const query = this.client.query({ topic: this.testTopic, depth: 2 });
+      return expect(query).to.eventually.deep.equal({
+        topic: this.testTopic,
+        children: [
+          {
+            topic: this.testTopic + "/baz",
+            payload: 23
+          },
+          {
+            topic: this.testTopic + "/foo",
+            payload: "bar"
+          },
+          {
+            topic: this.testTopic + "/more",
+            children: [
+              { topic: this.testTopic + "/more/one", payload: 1 },
+              { topic: this.testTopic + "/more/two", payload: 2 }
+            ]
+          }
+        ]
+      });
+    });
+
+    it("should flatten query results", function() {
+      const query = this.client.query({ topic: this.testTopic, depth: 2, flatten: true });
+      return expect(query).to.eventually.deep.equal([
+        { topic: this.testTopic },
+        { topic: this.testTopic + "/baz", payload: 23 },
+        { topic: this.testTopic + "/foo", payload: "bar" },
+        { topic: this.testTopic + "/more" },
         { topic: this.testTopic + "/more/one", payload: 1 },
         { topic: this.testTopic + "/more/two", payload: 2 }
-      ]
+      ]);
     });
-  });
 
-  it("should query subtopics with grandchildren", function() {
-    const query = this.client.query({ topic: this.testTopic, depth: 2 });
-    return expect(query).to.eventually.deep.equal({
-      topic: this.testTopic,
-      children: [
-        {
-          topic: this.testTopic + "/baz",
-          payload: 23
-        },
-        {
-          topic: this.testTopic + "/foo",
-          payload: "bar"
-        },
-        {
-          topic: this.testTopic + "/more",
-          children: [
-            { topic: this.testTopic + "/more/one", payload: 1 },
-            { topic: this.testTopic + "/more/two", payload: 2 }
-          ]
-        }
-      ]
+    it("should fail when querying an inexistent topic", function() {
+      const query = this.client.query({ topic: this.testTopic + "/does-not-exist" });
+      return Promise.all([
+        expect(query).to.be.rejected,
+        query.catch((error) => {
+          expect(error).to.deep.equal({
+            topic: this.testTopic + "/does-not-exist",
+            error: 404
+          });
+        })
+      ]);
     });
-  });
-
-  it("should flatten query results", function() {
-    const query = this.client.query({ topic: this.testTopic, depth: 2, flatten: true });
-    return expect(query).to.eventually.deep.equal([
-      { topic: this.testTopic },
-      { topic: this.testTopic + "/baz", payload: 23 },
-      { topic: this.testTopic + "/foo", payload: "bar" },
-      { topic: this.testTopic + "/more" },
-      { topic: this.testTopic + "/more/one", payload: 1 },
-      { topic: this.testTopic + "/more/two", payload: 2 }
-    ]);
-  });
-
-  it("should fail when querying an inexistent topic", function() {
-    const query = this.client.query({ topic: this.testTopic + "/does-not-exist" });
-    return Promise.all([
-      expect(query).to.be.rejected,
-      query.catch((error) => {
-        expect(error).to.deep.equal({
-          topic: this.testTopic + "/does-not-exist",
-          error: 404
-        });
-      })
-    ]);
   });
 
   describe("JSON Parsing", function() {
