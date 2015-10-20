@@ -106,6 +106,32 @@ describe("HTTP Query API", function() {
     })
   })
 
+  describe("Batch Queries", function() {
+    it("should query multiple topics", function() {
+      const query = this.client.query([
+        { topic: this.testTopic + "/foo" },
+        { topic: this.testTopic + "/baz"}
+      ])
+
+      return expect(query).to.eventually.deep.equal([
+        { topic: this.testTopic + "/foo", payload: "bar" },
+        { topic: this.testTopic + "/baz", payload: 23 }
+      ])
+    })
+
+    it("should include errors in the results", function() {
+      const query = this.client.query([
+        { topic: this.testTopic + "/foo" },
+        { topic: this.testTopic + "/does-not-exist"}
+      ])
+
+      return expect(query).to.eventually.deep.equal([
+        { topic: this.testTopic + "/foo", payload: "bar" },
+        { topic: this.testTopic + "/does-not-exist", error: 404 }
+      ])
+    })
+  })
+
   describe("JSON Parsing", function() {
     beforeEach(function(done) {
       this.client.client.publish(
@@ -121,12 +147,36 @@ describe("HTTP Query API", function() {
       return expect(query).to.be.rejected
     })
 
-    it("should not fail on invalid payloads when parsing is disabled", function() {
+    it("should represent errors in batch queries", function() {
+      const query = this.client.query([
+        { topic: this.testTopic + "/foo" },
+        { topic: this.testTopic + "/invalid" }
+      ])
+
+      return expect(query).to.eventually.deep.equal([
+        { topic: this.testTopic + "/foo", payload: "bar" },
+        { topic: this.testTopic + "/invalid", error: new SyntaxError("Unexpected token h") }
+      ])
+    })
+
+    it("can be disabled in single queries", function() {
       const query = this.client.query({ topic: this.testTopic + "/invalid", parseJson: false })
       return expect(query).to.eventually.deep.equal({
         topic: this.testTopic + "/invalid",
         payload: "this is invalid JSON"
       })
+    })
+
+    it("can be disabled in batch queries", function() {
+      const query = this.client.query([
+        { topic: this.testTopic + "/foo" },
+        { topic: this.testTopic + "/invalid", parseJson: false }
+      ])
+
+      return expect(query).to.eventually.deep.equal([
+        { topic: this.testTopic + "/foo", payload: "bar" },
+        { topic: this.testTopic + "/invalid", payload: "this is invalid JSON" }
+      ])
     })
   })
 })

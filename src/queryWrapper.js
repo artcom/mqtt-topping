@@ -1,6 +1,14 @@
 import _ from "lodash"
 import axios from "axios"
 
+function shouldParseJson(query) {
+  return _.isBoolean(query.parseJson) ? query.parseJson : true
+}
+
+function omitParseJson(query) {
+  return _.omit(query, "parseJson")
+}
+
 function parsePayloads(result) {
   if (_.isArray(result)) {
     result.forEach(parsePayloads)
@@ -25,10 +33,38 @@ export default class QueryWrapper {
   }
 
   send(query) {
-    const parseJson = _.isBoolean(query.parseJson) ? query.parseJson : true
+    if (_.isArray(query)) {
+      return this.sendBatch(query)
+    } else {
+      return this.sendSingle(query)
+    }
+  }
 
-    return axios.post(this.queryUri, _.omit(query, "parseJson")).then(({data}) => {
-      if (parseJson) {
+  sendBatch(queries) {
+    return axios.post(this.queryUri, queries.map(omitParseJson)).then(({data}) => {
+      return _(data)
+        .zip(queries)
+        .map(([result, query]) => {
+          if (shouldParseJson(query)) {
+            try {
+              parsePayloads(result)
+            } catch (error) {
+              return {
+                topic: query.topic,
+                error
+              }
+            }
+          }
+
+          return result
+        })
+        .value()
+    })
+  }
+
+  sendSingle(query) {
+    return axios.post(this.queryUri, omitParseJson(query)).then(({data}) => {
+      if (shouldParseJson(query)) {
         parsePayloads(data)
       }
 
