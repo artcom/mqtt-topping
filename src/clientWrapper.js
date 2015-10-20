@@ -27,14 +27,14 @@ export default class ClientWrapper {
   }
 
   publish(topic, payload) {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       const retain = !isEventOrCommand(topic)
       this.client.publish(topic, JSON.stringify(payload), { retain: retain, qos: 2 }, resolve)
     })
   }
 
   unpublish(topic) {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       this.client.publish(topic, null, { retain: true, qos: 2 }, resolve)
     })
   }
@@ -56,7 +56,7 @@ export default class ClientWrapper {
   }
 
   subscribe(topic, handler) {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       let subscribe = false
 
       if (!this.subscriptions[topic]) {
@@ -78,7 +78,7 @@ export default class ClientWrapper {
   }
 
   unsubscribe(topic, handler) {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       const subscription = this.subscriptions[topic]
 
       if (subscription) {

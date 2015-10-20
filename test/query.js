@@ -2,14 +2,11 @@
 
 import chai, {expect} from "chai"
 import chaiAsPromised from "chai-as-promised"
-import sinon from "sinon"
-import sinonChai from "sinon-chai"
 
 import {waitFor} from "./testHelpers"
 import topping from "../src/topping"
 
 chai.use(chaiAsPromised)
-chai.use(sinonChai)
 
 const httpBrokerUri = process.env.HTTP_BROKER_URI || "http://localhost:8080"
 const tcpBrokerUri = process.env.TCP_BROKER_URI || "tcp://localhost"
