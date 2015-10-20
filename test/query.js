@@ -1,66 +1,66 @@
 /* eslint-env mocha */
 
-import chai, {expect} from "chai";
-import chaiAsPromised from "chai-as-promised";
-import sinon from "sinon";
-import sinonChai from "sinon-chai";
+import chai, {expect} from "chai"
+import chaiAsPromised from "chai-as-promised"
+import sinon from "sinon"
+import sinonChai from "sinon-chai"
 
-import {waitFor} from "./testHelpers";
-import topping from "../src/topping";
+import {waitFor} from "./testHelpers"
+import topping from "../src/topping"
 
-chai.use(chaiAsPromised);
-chai.use(sinonChai);
+chai.use(chaiAsPromised)
+chai.use(sinonChai)
 
-const httpBrokerUri = process.env.HTTP_BROKER_URI || "http://localhost:8080";
-const tcpBrokerUri = process.env.TCP_BROKER_URI || "tcp://localhost";
+const httpBrokerUri = process.env.HTTP_BROKER_URI || "http://localhost:8080"
+const tcpBrokerUri = process.env.TCP_BROKER_URI || "tcp://localhost"
 
 describe("HTTP Query API", function() {
   beforeEach(function() {
-    this.client = topping.connect(tcpBrokerUri, httpBrokerUri);
-    this.testTopic = "test/topping-" + Date.now();
+    this.client = topping.connect(tcpBrokerUri, httpBrokerUri)
+    this.testTopic = "test/topping-" + Date.now()
 
     return waitFor(() => this.client.isConnected).then(() => {
-      return this.client.publish(this.testTopic + "/foo", "bar");
+      return this.client.publish(this.testTopic + "/foo", "bar")
     }).then(() => {
-      return this.client.publish(this.testTopic + "/baz", 23);
+      return this.client.publish(this.testTopic + "/baz", 23)
     }).then(() => {
-      return this.client.publish(this.testTopic + "/more/one", 1);
+      return this.client.publish(this.testTopic + "/more/one", 1)
     }).then(() => {
-      return this.client.publish(this.testTopic + "/more/two", 2);
-    });
-  });
+      return this.client.publish(this.testTopic + "/more/two", 2)
+    })
+  })
 
   describe("Single Queries", function() {
     it("should query single topics", function() {
-      const query = this.client.query({ topic: this.testTopic + "/foo" });
+      const query = this.client.query({ topic: this.testTopic + "/foo" })
       return expect(query).to.eventually.deep.equal({
         topic: this.testTopic + "/foo",
         payload: "bar"
-      });
-    });
+      })
+    })
 
     it("should query wildcard topics", function() {
-      const query = this.client.query({ topic: this.testTopic + "/+" });
+      const query = this.client.query({ topic: this.testTopic + "/+" })
       return expect(query).to.eventually.deep.equal([
         { topic: this.testTopic + "/baz", payload: 23 },
         { topic: this.testTopic + "/foo", payload: "bar" },
         { topic: this.testTopic + "/more" }
-      ]);
-    });
+      ])
+    })
 
     it("should query subtopics", function() {
-      const query = this.client.query({ topic: this.testTopic + "/more", depth: 1 });
+      const query = this.client.query({ topic: this.testTopic + "/more", depth: 1 })
       return expect(query).to.eventually.deep.equal({
         topic: this.testTopic + "/more",
         children: [
           { topic: this.testTopic + "/more/one", payload: 1 },
           { topic: this.testTopic + "/more/two", payload: 2 }
         ]
-      });
-    });
+      })
+    })
 
     it("should query subtopics with grandchildren", function() {
-      const query = this.client.query({ topic: this.testTopic, depth: 2 });
+      const query = this.client.query({ topic: this.testTopic, depth: 2 })
       return expect(query).to.eventually.deep.equal({
         topic: this.testTopic,
         children: [
@@ -80,11 +80,11 @@ describe("HTTP Query API", function() {
             ]
           }
         ]
-      });
-    });
+      })
+    })
 
     it("should flatten query results", function() {
-      const query = this.client.query({ topic: this.testTopic, depth: 2, flatten: true });
+      const query = this.client.query({ topic: this.testTopic, depth: 2, flatten: true })
       return expect(query).to.eventually.deep.equal([
         { topic: this.testTopic },
         { topic: this.testTopic + "/baz", payload: 23 },
@@ -92,22 +92,22 @@ describe("HTTP Query API", function() {
         { topic: this.testTopic + "/more" },
         { topic: this.testTopic + "/more/one", payload: 1 },
         { topic: this.testTopic + "/more/two", payload: 2 }
-      ]);
-    });
+      ])
+    })
 
     it("should fail when querying an inexistent topic", function() {
-      const query = this.client.query({ topic: this.testTopic + "/does-not-exist" });
+      const query = this.client.query({ topic: this.testTopic + "/does-not-exist" })
       return Promise.all([
         expect(query).to.be.rejected,
         query.catch((error) => {
           expect(error).to.deep.equal({
             topic: this.testTopic + "/does-not-exist",
             error: 404
-          });
+          })
         })
-      ]);
-    });
-  });
+      ])
+    })
+  })
 
   describe("JSON Parsing", function() {
     beforeEach(function(done) {
@@ -116,20 +116,20 @@ describe("HTTP Query API", function() {
         "this is invalid JSON",
         { retain: true },
         done
-      );
-    });
+      )
+    })
 
     it("should fail on invalid payloads", function() {
-      const query = this.client.query({ topic: this.testTopic + "/invalid" });
-      return expect(query).to.be.rejected;
-    });
+      const query = this.client.query({ topic: this.testTopic + "/invalid" })
+      return expect(query).to.be.rejected
+    })
 
     it("should not fail on invalid payloads when parsing is disabled", function() {
-      const query = this.client.query({ topic: this.testTopic + "/invalid", parseJson: false });
+      const query = this.client.query({ topic: this.testTopic + "/invalid", parseJson: false })
       return expect(query).to.eventually.deep.equal({
         topic: this.testTopic + "/invalid",
         payload: "this is invalid JSON"
-      });
-    });
-  });
-});
+      })
+    })
+  })
+})
