@@ -7,10 +7,10 @@ import {isEventOrCommand, topicRegexp} from "../src/helpers"
 describe("Helpers", function() {
   it("should identify event and command topics", function() {
     expect(isEventOrCommand("foo/bar/baz")).to.be.false
-    expect(isEventOrCommand("foo/bar/onbaz")).to.be.false
-    expect(isEventOrCommand("foo/bar/dobaz")).to.be.false
     expect(isEventOrCommand("foo/bar/door")).to.be.false
     expect(isEventOrCommand("foo/bar/onwards")).to.be.false
+    expect(isEventOrCommand("foo/bar/do")).to.be.false
+    expect(isEventOrCommand("on")).to.be.false
 
     expect(isEventOrCommand("foo/bar/onBaz")).to.be.true
     expect(isEventOrCommand("foo/bar/doBaz")).to.be.true

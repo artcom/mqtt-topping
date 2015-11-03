@@ -3,11 +3,12 @@ function isUpperCase(string) {
 }
 
 export function isEventOrCommand(topic) {
-  const lastSlash = topic.lastIndexOf("/")
-  const prefix = topic.substr(lastSlash + 1, 2)
-  return topic.length > 2
+  const lastTopicLevel = topic.substr(topic.lastIndexOf("/") +1, topic.length)
+  const prefix = lastTopicLevel.substr(0, 2)
+
+  return lastTopicLevel.length > 2
     && (prefix === "on" || prefix === "do")
-    && isUpperCase(topic.charAt(lastSlash + 3))
+    && isUpperCase(lastTopicLevel.charAt(2))
 }
 
 function escapeRegExp(string){
