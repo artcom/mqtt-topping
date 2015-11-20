@@ -1,16 +1,17 @@
-import _ from "lodash"
 import axios from "axios"
+import isBoolean from "lodash.isboolean"
+import omit from "lodash.omit"
 
 function shouldParseJson(query) {
-  return _.isBoolean(query.parseJson) ? query.parseJson : true
+  return isBoolean(query.parseJson) ? query.parseJson : true
 }
 
 function omitParseJson(query) {
-  return _.omit(query, "parseJson")
+  return omit(query, "parseJson")
 }
 
 function parsePayloads(result) {
-  if (_.isArray(result)) {
+  if (Array.isArray(result)) {
     result.forEach(parsePayloads)
   } else {
     return parsePayload(result)
@@ -33,7 +34,7 @@ export default class QueryWrapper {
   }
 
   send(query) {
-    if (_.isArray(query)) {
+    if (Array.isArray(query)) {
       return this.sendBatch(query)
     } else {
       return this.sendSingle(query)
@@ -42,23 +43,22 @@ export default class QueryWrapper {
 
   sendBatch(queries) {
     return axios.post(this.queryUri, queries.map(omitParseJson)).then(({data}) => {
-      return _(data)
-        .zip(queries)
-        .map(([result, query]) => {
-          if (shouldParseJson(query)) {
-            try {
-              parsePayloads(result)
-            } catch (error) {
-              return {
-                topic: query.topic,
-                error
-              }
+      return data.map((result, index) => {
+        const query = queries[index]
+
+        if (shouldParseJson(query)) {
+          try {
+            parsePayloads(result)
+          } catch (error) {
+            return {
+              topic: query.topic,
+              error
             }
           }
+        }
 
-          return result
-        })
-        .value()
+        return result
+      })
     })
   }
 

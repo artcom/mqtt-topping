@@ -1,4 +1,6 @@
-import _ from "lodash"
+import forOwn from "lodash.forown"
+import isFunction from "lodash.isfunction"
+import without from "lodash.without"
 import mqtt from "mqtt"
 
 import QueryWrapper from "./queryWrapper"
@@ -6,7 +8,7 @@ import {isEventOrCommand, topicRegexp} from "./helpers"
 
 export default class ClientWrapper {
   constructor(tcpUri, httpUri, options, connectCallback) {
-    if (_.isFunction(options)) {
+    if (isFunction(options)) {
       connectCallback = options
       options = undefined
     }
@@ -46,10 +48,13 @@ export default class ClientWrapper {
       flatten: true,
       parseJson: false
     }).then((subtopics) => {
-      const unpublishPromises = _(subtopics)
-        .filter((subtopic) => subtopic.payload)
-        .map((subtopic) => this.unpublish(subtopic.topic))
-        .value()
+      const unpublishPromises = subtopics.reduce((promises, subtopic) => {
+        if (subtopic.payload) {
+          promises.push(this.unpublish(subtopic.topic))
+        }
+
+        return promises
+      }, [])
 
       return Promise.all(unpublishPromises)
     })
@@ -82,9 +87,9 @@ export default class ClientWrapper {
       const subscription = this.subscriptions[topic]
 
       if (subscription) {
-        subscription.handlers = _.without(subscription.handlers, handler)
+        subscription.handlers = without(subscription.handlers, handler)
 
-        if (_.isEmpty(subscription.handlers)) {
+        if (subscription.handlers.length === 0) {
           this.client.unsubscribe(topic, resolve)
           delete this.subscriptions[topic]
         } else {
@@ -122,7 +127,7 @@ export default class ClientWrapper {
   }
 
   callHandlers(topic, payload, packet) {
-    _.forOwn(this.subscriptions, (subscription) => {
+    forOwn(this.subscriptions, (subscription) => {
       if (subscription.regexp.test(topic)) {
         subscription.handlers.forEach((handler) => {
           handler(payload, topic, packet)
