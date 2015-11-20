@@ -116,7 +116,7 @@ describe("MQTT Client", function() {
     }).then(() => {
       return this.client.publish(eventTopic, "hello again")
     }).then(() => {
-      return waitFor(() => handler.called)
+      return waitFor(() => handler.calledTwice)
     }).then(() => {
       expect(handler).not.to.have.been.calledWith("goodbye")
       expect(handler).to.have.been.calledWith("hello again")
