@@ -146,4 +146,17 @@ describe("MQTT Client", function() {
       query.catch((error) => expect(error).to.deep.equal({ topic: this.testTopic, error: 404 }))
     ])
   })
+
+  it("should receive messages with empty payload", function() {
+    const handler = sinon.spy()
+
+    return this.client.subscribe(this.testTopic + "/foo", handler).then(() => {
+      return this.client.unpublish(this.testTopic + "/foo")
+    }).then(() => {
+      return waitFor(() => handler.calledTwice)
+    }).then(() => {
+      expect(handler).to.have.been.calledWith("bar", this.testTopic + "/foo")
+      expect(handler).to.have.been.calledWith(undefined, this.testTopic + "/foo")
+    })
+  })
 })

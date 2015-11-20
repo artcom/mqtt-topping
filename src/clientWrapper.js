@@ -111,23 +111,31 @@ export default class ClientWrapper {
   }
 
   handleMessage(topic, json, packet) {
-    let payload
+    const [success, payload] = parsePayload(json)
 
-    try {
-      payload = JSON.parse(json)
-    } catch (error) {
+    if (success) {
+      this.callHandlers(topic, payload, packet)
+    } else {
       console.log(`Ignoring MQTT message for topic '${topic}' ` +
                   `with invalid JSON payload '${json}'`)
     }
+  }
 
-    if (payload !== undefined) {
-      _.forOwn(this.subscriptions, (subscription) => {
-        if (subscription.regexp.test(topic)) {
-          subscription.handlers.forEach((handler) => {
-            handler(payload, topic, packet)
-          })
-        }
-      })
-    }
+  callHandlers(topic, payload, packet) {
+    _.forOwn(this.subscriptions, (subscription) => {
+      if (subscription.regexp.test(topic)) {
+        subscription.handlers.forEach((handler) => {
+          handler(payload, topic, packet)
+        })
+      }
+    })
+  }
+}
+
+function parsePayload(payload) {
+  try {
+    return [true, JSON.parse(payload)]
+  } catch (error) {
+    return [payload.length === 0, undefined]
   }
 }
