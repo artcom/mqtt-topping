@@ -16,6 +16,8 @@ const tcpBrokerUri = process.env.TCP_BROKER_URI || "tcp://localhost"
 console.log(tcpBrokerUri)
 
 describe("MQTT Client", function() {
+  this.timeout(5000)
+
   beforeEach(function() {
     this.client = topping.connect(tcpBrokerUri, httpBrokerUri)
     this.testTopic = "test/topping-" + Date.now()
@@ -25,6 +27,10 @@ describe("MQTT Client", function() {
     }).then(() => {
       return this.client.publish(this.testTopic + "/baz", 23)
     })
+  })
+
+  afterEach(function() {
+    return this.client.unpublishRecursively(this.testTopic)
   })
 
   it("should retrieve retained messages", function() {

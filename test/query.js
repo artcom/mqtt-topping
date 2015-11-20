@@ -12,6 +12,8 @@ const httpBrokerUri = process.env.HTTP_BROKER_URI || "http://localhost:8080"
 const tcpBrokerUri = process.env.TCP_BROKER_URI || "tcp://localhost"
 
 describe("HTTP Query API", function() {
+  this.timeout(5000)
+
   beforeEach(function() {
     this.client = topping.connect(tcpBrokerUri, httpBrokerUri)
     this.testTopic = "test/topping-" + Date.now()
@@ -25,6 +27,10 @@ describe("HTTP Query API", function() {
     }).then(() => {
       return this.client.publish(this.testTopic + "/more/two", 2)
     })
+  })
+
+  afterEach(function() {
+    return this.client.unpublishRecursively(this.testTopic)
   })
 
   describe("Single Queries", function() {
