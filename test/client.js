@@ -13,7 +13,6 @@ chai.use(sinonChai)
 
 const httpBrokerUri = process.env.HTTP_BROKER_URI || "http://localhost:8080"
 const tcpBrokerUri = process.env.TCP_BROKER_URI || "tcp://localhost"
-console.log(tcpBrokerUri)
 
 describe("MQTT Client", function() {
   this.timeout(5000)

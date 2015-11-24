@@ -14,6 +14,11 @@ export default class ClientWrapper {
     this.client.on("close", this.handleClose.bind(this))
     this.client.on("message", this.handleMessage.bind(this))
 
+    this.addListener = this.client.addListener.bind(this.client)
+    this.removeListener = this.client.removeListener.bind(this.client)
+    this.on = this.client.on.bind(this.client)
+    this.once = this.client.once.bind(this.client)
+
     this.queryWrapper = new QueryWrapper(httpUri)
   }
 
