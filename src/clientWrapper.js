@@ -1,5 +1,4 @@
 import forOwn from "lodash.forown"
-import isFunction from "lodash.isfunction"
 import without from "lodash.without"
 import mqtt from "mqtt"
 
@@ -7,14 +6,8 @@ import QueryWrapper from "./queryWrapper"
 import {isEventOrCommand, topicRegexp} from "./helpers"
 
 export default class ClientWrapper {
-  constructor(tcpUri, httpUri, options, connectCallback) {
-    if (isFunction(options)) {
-      connectCallback = options
-      options = undefined
-    }
-
+  constructor(tcpUri, httpUri, options) {
     this.client = mqtt.connect(tcpUri, options)
-    this.connectCallback = connectCallback
     this.subscriptions = {}
 
     this.client.on("connect", this.handleConnect.bind(this))
@@ -101,10 +94,6 @@ export default class ClientWrapper {
 
   handleConnect() {
     this.isConnected = true
-
-    if (this.connectCallback) {
-      this.connectCallback()
-    }
 
     Object.keys(this.subscriptions).forEach((topic) => {
       this.client.subscribe(topic, { qos: 2 })
