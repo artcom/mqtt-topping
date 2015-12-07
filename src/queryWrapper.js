@@ -2,32 +2,6 @@ import axios from "axios"
 import isBoolean from "lodash.isboolean"
 import omit from "lodash.omit"
 
-function shouldParseJson(query) {
-  return isBoolean(query.parseJson) ? query.parseJson : true
-}
-
-function omitParseJson(query) {
-  return omit(query, "parseJson")
-}
-
-function parsePayloads(result) {
-  if (Array.isArray(result)) {
-    result.forEach(parsePayloads)
-  } else {
-    return parsePayload(result)
-  }
-}
-
-function parsePayload(result) {
-  if (result.payload) {
-    result.payload = JSON.parse(result.payload)
-  }
-
-  if (result.children) {
-    result.children.map(parsePayloads)
-  }
-}
-
 export default class QueryWrapper {
   constructor(uri) {
     this.queryUri = uri + "/query"
@@ -72,5 +46,31 @@ export default class QueryWrapper {
     }).catch(({data}) => {
       throw data
     })
+  }
+}
+
+function omitParseJson(query) {
+  return omit(query, "parseJson")
+}
+
+function shouldParseJson(query) {
+  return isBoolean(query.parseJson) ? query.parseJson : true
+}
+
+function parsePayloads(result) {
+  if (Array.isArray(result)) {
+    result.forEach(parsePayloads)
+  } else {
+    return parsePayload(result)
+  }
+}
+
+function parsePayload(result) {
+  if (result.payload) {
+    result.payload = JSON.parse(result.payload)
+  }
+
+  if (result.children) {
+    result.children.map(parsePayloads)
   }
 }
