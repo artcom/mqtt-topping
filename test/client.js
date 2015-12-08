@@ -128,6 +128,15 @@ describe("MQTT Client", function() {
     })
   })
 
+  it("should publish messages without stringifying", function() {
+    const topic = this.testTopic + "/raw"
+
+    return this.client.publish(topic, "invalid\nJSON", { stringifyJson: false }).then(() => {
+      const query = this.client.query({ topic, parseJson: false })
+      return expect(query).to.eventually.deep.equal({ topic, payload: "invalid\nJSON" })
+    })
+  })
+
   it("should unpublish messages", function() {
     return this.client.unpublish(this.testTopic + "/foo").then(() => {
       const query = this.client.query({

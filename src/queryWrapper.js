@@ -1,5 +1,5 @@
 import axios from "axios"
-import isBoolean from "lodash.isboolean"
+import get from "lodash.get"
 import omit from "lodash.omit"
 
 export default class QueryWrapper {
@@ -54,7 +54,7 @@ function omitParseJson(query) {
 }
 
 function shouldParseJson(query) {
-  return isBoolean(query.parseJson) ? query.parseJson : true
+  return get(query, "parseJson", true)
 }
 
 function parsePayloads(result) {

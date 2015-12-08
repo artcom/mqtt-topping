@@ -1,4 +1,5 @@
 import forOwn from "lodash.forown"
+import get from "lodash.get"
 import without from "lodash.without"
 import mqtt from "mqtt"
 
@@ -26,10 +27,14 @@ export default class ClientWrapper {
     return this.queryWrapper.send(query)
   }
 
-  publish(topic, payload) {
+  publish(topic, payload, options = {}) {
+    if (get(options, "stringifyJson", true)) {
+      payload = JSON.stringify(payload)
+    }
+
     return new Promise((resolve) => {
       const retain = !isEventOrCommand(topic)
-      this.client.publish(topic, JSON.stringify(payload), { retain: retain, qos: 2 }, resolve)
+      this.client.publish(topic, payload, { retain: retain, qos: 2 }, resolve)
     })
   }
 
