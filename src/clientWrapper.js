@@ -1,6 +1,6 @@
 import forOwn from "lodash.forown"
 import get from "lodash.get"
-import without from "lodash.without"
+import remove from "lodash.remove"
 import mqtt from "mqtt"
 
 import QueryWrapper from "./queryWrapper"
@@ -63,7 +63,12 @@ export default class ClientWrapper {
     })
   }
 
-  subscribe(topic, handler) {
+  subscribe(topic, options, callback) {
+    if (!callback) {
+      callback = options
+      options = {}
+    }
+
     return new Promise((resolve) => {
       let subscribe = false
 
@@ -75,7 +80,7 @@ export default class ClientWrapper {
         }
       }
 
-      this.subscriptions[topic].handlers.push(handler)
+      this.subscriptions[topic].handlers.push({callback, options})
 
       if (subscribe && this.isConnected) {
         this.client.subscribe(topic, { qos: 2 }, resolve)
@@ -85,12 +90,12 @@ export default class ClientWrapper {
     })
   }
 
-  unsubscribe(topic, handler) {
+  unsubscribe(topic, callback) {
     return new Promise((resolve) => {
       const subscription = this.subscriptions[topic]
 
       if (subscription) {
-        subscription.handlers = without(subscription.handlers, handler)
+        remove(subscription.handlers, "callback", callback)
 
         if (subscription.handlers.length === 0) {
           this.client.unsubscribe(topic, resolve)
@@ -114,25 +119,29 @@ export default class ClientWrapper {
     this.isConnected = false
   }
 
-  handleMessage(topic, json, packet) {
-    const [success, payload] = parsePayload(json)
+  handleMessage(topic, payload, packet) {
+    const [success, json] = parsePayload(payload)
+    let showError = false
 
-    if (success) {
-      this.callHandlers(topic, payload, packet)
-    } else {
-      console.log(`Ignoring MQTT message for topic '${topic}' ` +
-                  `with invalid JSON payload '${json}'`)
-    }
-  }
-
-  callHandlers(topic, payload, packet) {
     forOwn(this.subscriptions, (subscription) => {
       if (subscription.regexp.test(topic)) {
-        subscription.handlers.forEach((handler) => {
-          handler(payload, topic, packet)
+        subscription.handlers.forEach(({callback, options}) => {
+          if (get(options, "parseJson", true)) {
+            if (success) {
+              callback(json, topic, packet)
+            } else {
+              showError = true
+            }
+          } else {
+            callback(payload.toString(), topic, packet)
+          }
         })
       }
     })
+
+    if (showError) {
+      console.log(`ignoring MQTT message for topic '${topic}': invalid JSON payload '${payload}'`)
+    }
   }
 }
 

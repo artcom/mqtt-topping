@@ -115,6 +115,21 @@ describe("MQTT Client", function() {
       })
     })
 
+    it("should receive raw payload when JSON parsing is disabled", function() {
+      const handler = sinon.spy()
+      const eventTopic = this.testTopic + "/onEvent"
+
+      return this.client.subscribe(eventTopic, { parseJson: false }, handler).then(() => {
+        this.client.client.publish(eventTopic, "this is invalid JSON")
+        this.client.client.publish(eventTopic, "42")
+        return waitFor(() => handler.calledTwice)
+      }).then(() => {
+        expect(handler).to.have.been
+          .calledWith("this is invalid JSON", eventTopic)
+          .calledWith("42", eventTopic)
+      })
+    })
+
     it("should not receive messages after unsubscribing", function() {
       const handler = sinon.spy()
       const eventTopic = this.testTopic + "/onEvent"
