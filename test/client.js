@@ -18,6 +18,8 @@ describe("MQTT Client", function() {
   this.timeout(5000)
 
   beforeEach(function() {
+    sinon.spy(console, "log")
+
     this.client = topping.connect(tcpBrokerUri, httpBrokerUri)
     this.testTopic = "test/topping-" + Date.now()
 
@@ -29,6 +31,7 @@ describe("MQTT Client", function() {
   })
 
   afterEach(function() {
+    console.log.restore()
     return this.client.unpublishRecursively(this.testTopic)
   })
 
@@ -84,9 +87,6 @@ describe("MQTT Client", function() {
     const handler = sinon.spy()
     const eventTopic = this.testTopic + "/onEvent"
 
-    const consoleLog = console.log
-    console.log = sinon.spy()
-
     return this.client.subscribe(eventTopic, handler).then(() => {
       this.client.client.publish(eventTopic, "this is invalid JSON")
       this.client.client.publish(eventTopic, "42")
@@ -96,11 +96,6 @@ describe("MQTT Client", function() {
       expect(console.log).to.have.been.calledWith(
         sinon.match(eventTopic).and(sinon.match("this is invalid JSON"))
       )
-
-      console.log = consoleLog
-    }).catch((error) => {
-      console.log = consoleLog
-      throw error
     })
   })
 
