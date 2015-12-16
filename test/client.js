@@ -35,137 +35,143 @@ describe("MQTT Client", function() {
     return this.client.unpublishRecursively(this.testTopic)
   })
 
-  it("should retrieve retained messages", function() {
-    const fooHandler = sinon.spy()
-    const bazHandler = sinon.spy()
+  describe("subscribe", function() {
+    it("should retrieve retained messages", function() {
+      const fooHandler = sinon.spy()
+      const bazHandler = sinon.spy()
 
-    this.client.subscribe(this.testTopic + "/foo", fooHandler)
-    this.client.subscribe(this.testTopic + "/baz", bazHandler)
+      this.client.subscribe(this.testTopic + "/foo", fooHandler)
+      this.client.subscribe(this.testTopic + "/baz", bazHandler)
 
-    return waitFor(() => fooHandler.called && bazHandler.called).then(() => {
-      expect(fooHandler).to.have.been.calledOnce.and.calledWith("bar", this.testTopic + "/foo")
-      expect(bazHandler).to.have.been.calledOnce.and.calledWith(23, this.testTopic + "/baz")
+      return waitFor(() => fooHandler.called && bazHandler.called).then(() => {
+        expect(fooHandler).to.have.been.calledOnce.and.calledWith("bar", this.testTopic + "/foo")
+        expect(bazHandler).to.have.been.calledOnce.and.calledWith(23, this.testTopic + "/baz")
+      })
+    })
+
+    it("should retrieve non-retained messages", function() {
+      const handler = sinon.spy()
+      const eventTopic = this.testTopic + "/onEvent"
+
+      return this.client.subscribe(eventTopic, handler).then(() => {
+        return this.client.publish(eventTopic, "hello")
+      }).then(() => {
+        return waitFor(() => handler.called)
+      }).then(() => {
+        expect(handler).to.have.been.calledWith("hello", eventTopic)
+      })
+    })
+
+    it("should receive messages with empty payload", function() {
+      const handler = sinon.spy()
+
+      return this.client.subscribe(this.testTopic + "/foo", handler).then(() => {
+        return this.client.unpublish(this.testTopic + "/foo")
+      }).then(() => {
+        return waitFor(() => handler.calledTwice)
+      }).then(() => {
+        expect(handler).to.have.been.calledWith("bar", this.testTopic + "/foo")
+        expect(handler).to.have.been.calledWith(undefined, this.testTopic + "/foo")
+      })
+    })
+
+    context("with wildcard", function() {
+      it("should retrieve retained messages using hash wildcard", function() {
+        const handler = sinon.spy()
+        this.client.subscribe(this.testTopic + "/#", handler)
+
+        return waitFor(() => handler.calledTwice).then(() => {
+          expect(handler).to.have.been
+            .calledWith("bar", this.testTopic + "/foo")
+            .calledWith(23, this.testTopic + "/baz")
+        })
+      })
+
+      it("should retrieve retained messages using plus wildcard", function() {
+        const handler = sinon.spy()
+        this.client.subscribe(this.testTopic + "/+", handler)
+
+        return waitFor(() => handler.calledTwice).then(() => {
+          expect(handler).to.have.been
+            .calledWith("bar", this.testTopic + "/foo")
+            .calledWith(23, this.testTopic + "/baz")
+        })
+      })
+    })
+
+    it("should ignore malformed JSON payloads", function() {
+      const handler = sinon.spy()
+      const eventTopic = this.testTopic + "/onEvent"
+
+      return this.client.subscribe(eventTopic, handler).then(() => {
+        this.client.client.publish(eventTopic, "this is invalid JSON")
+        this.client.client.publish(eventTopic, "42")
+        return waitFor(() => handler.called)
+      }).then(() => {
+        expect(handler).to.have.been.calledOnce.and.calledWith(42, eventTopic)
+        expect(console.log).to.have.been.calledWith(
+          sinon.match(eventTopic).and(sinon.match("this is invalid JSON"))
+        )
+      })
+    })
+
+    it("should not receive messages after unsubscribing", function() {
+      const handler = sinon.spy()
+      const eventTopic = this.testTopic + "/onEvent"
+
+      return this.client.subscribe(eventTopic, handler).then(() => {
+        return this.client.publish(eventTopic, "hello")
+      }).then(() => {
+        return waitFor(() => handler.called)
+      }).then(() => {
+        return this.client.unsubscribe(eventTopic, handler)
+      }).then(() => {
+        return this.client.publish(eventTopic, "goodbye")
+      }).then(() => {
+        return this.client.subscribe(eventTopic, handler)
+      }).then(() => {
+        return this.client.publish(eventTopic, "hello again")
+      }).then(() => {
+        return waitFor(() => handler.calledTwice)
+      }).then(() => {
+        expect(handler).not.to.have.been.calledWith("goodbye")
+        expect(handler).to.have.been.calledWith("hello again")
+      })
     })
   })
 
-  it("should retrieve non-retained messages", function() {
-    const handler = sinon.spy()
-    const eventTopic = this.testTopic + "/onEvent"
+  describe("publish", function() {
+    it("should publish messages without stringifying", function() {
+      const topic = this.testTopic + "/raw"
 
-    return this.client.subscribe(eventTopic, handler).then(() => {
-      return this.client.publish(eventTopic, "hello")
-    }).then(() => {
-      return waitFor(() => handler.called)
-    }).then(() => {
-      expect(handler).to.have.been.calledWith("hello", eventTopic)
+      return this.client.publish(topic, "invalid\nJSON", { stringifyJson: false }).then(() => {
+        const query = this.client.query({ topic, parseJson: false })
+        return expect(query).to.eventually.deep.equal({ topic, payload: "invalid\nJSON" })
+      })
     })
-  })
 
-  it("should retrieve retained messages using hash wildcard", function() {
-    const handler = sinon.spy()
-    this.client.subscribe(this.testTopic + "/#", handler)
+    it("should unpublish messages", function() {
+      return this.client.unpublish(this.testTopic + "/foo").then(() => {
+        const query = this.client.query({
+          topic: this.testTopic,
+          depth: 1
+        }).then((result) => result.children)
 
-    return waitFor(() => handler.calledTwice).then(() => {
-      expect(handler).to.have.been
-        .calledWith("bar", this.testTopic + "/foo")
-        .calledWith(23, this.testTopic + "/baz")
+        return expect(query).to.eventually.deep.equal([
+          { topic: this.testTopic + "/baz", payload: 23 }
+        ])
+      })
     })
-  })
 
-  it("should retrieve retained messages using plus wildcard", function() {
-    const handler = sinon.spy()
-    this.client.subscribe(this.testTopic + "/+", handler)
-
-    return waitFor(() => handler.calledTwice).then(() => {
-      expect(handler).to.have.been
-        .calledWith("bar", this.testTopic + "/foo")
-        .calledWith(23, this.testTopic + "/baz")
-    })
-  })
-
-  it("should ignore malformed JSON payloads", function() {
-    const handler = sinon.spy()
-    const eventTopic = this.testTopic + "/onEvent"
-
-    return this.client.subscribe(eventTopic, handler).then(() => {
-      this.client.client.publish(eventTopic, "this is invalid JSON")
-      this.client.client.publish(eventTopic, "42")
-      return waitFor(() => handler.called)
-    }).then(() => {
-      expect(handler).to.have.been.calledOnce.and.calledWith(42, eventTopic)
-      expect(console.log).to.have.been.calledWith(
-        sinon.match(eventTopic).and(sinon.match("this is invalid JSON"))
+    it("should unpublish messages recursively", function() {
+      const query = this.client.unpublishRecursively(this.testTopic).then(() =>
+        this.client.query({ topic: this.testTopic })
       )
-    })
-  })
 
-  it("should not receive messages after unsubscribing", function() {
-    const handler = sinon.spy()
-    const eventTopic = this.testTopic + "/onEvent"
-
-    return this.client.subscribe(eventTopic, handler).then(() => {
-      return this.client.publish(eventTopic, "hello")
-    }).then(() => {
-      return waitFor(() => handler.called)
-    }).then(() => {
-      return this.client.unsubscribe(eventTopic, handler)
-    }).then(() => {
-      return this.client.publish(eventTopic, "goodbye")
-    }).then(() => {
-      return this.client.subscribe(eventTopic, handler)
-    }).then(() => {
-      return this.client.publish(eventTopic, "hello again")
-    }).then(() => {
-      return waitFor(() => handler.calledTwice)
-    }).then(() => {
-      expect(handler).not.to.have.been.calledWith("goodbye")
-      expect(handler).to.have.been.calledWith("hello again")
-    })
-  })
-
-  it("should publish messages without stringifying", function() {
-    const topic = this.testTopic + "/raw"
-
-    return this.client.publish(topic, "invalid\nJSON", { stringifyJson: false }).then(() => {
-      const query = this.client.query({ topic, parseJson: false })
-      return expect(query).to.eventually.deep.equal({ topic, payload: "invalid\nJSON" })
-    })
-  })
-
-  it("should unpublish messages", function() {
-    return this.client.unpublish(this.testTopic + "/foo").then(() => {
-      const query = this.client.query({
-        topic: this.testTopic,
-        depth: 1
-      }).then((result) => result.children)
-
-      return expect(query).to.eventually.deep.equal([
-        { topic: this.testTopic + "/baz", payload: 23 }
+      return Promise.all([
+        expect(query).to.be.rejected,
+        query.catch((error) => expect(error).to.deep.equal({ topic: this.testTopic, error: 404 }))
       ])
-    })
-  })
-
-  it("should unpublish messages recursively", function() {
-    const query = this.client.unpublishRecursively(this.testTopic).then(() =>
-      this.client.query({ topic: this.testTopic })
-    )
-
-    return Promise.all([
-      expect(query).to.be.rejected,
-      query.catch((error) => expect(error).to.deep.equal({ topic: this.testTopic, error: 404 }))
-    ])
-  })
-
-  it("should receive messages with empty payload", function() {
-    const handler = sinon.spy()
-
-    return this.client.subscribe(this.testTopic + "/foo", handler).then(() => {
-      return this.client.unpublish(this.testTopic + "/foo")
-    }).then(() => {
-      return waitFor(() => handler.calledTwice)
-    }).then(() => {
-      expect(handler).to.have.been.calledWith("bar", this.testTopic + "/foo")
-      expect(handler).to.have.been.calledWith(undefined, this.testTopic + "/foo")
     })
   })
 })
