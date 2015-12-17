@@ -4,7 +4,7 @@ import remove from "lodash.remove"
 import mqtt from "mqtt"
 
 import QueryWrapper from "./queryWrapper"
-import {isEventOrCommand, topicRegexp} from "./helpers"
+import {isEventOrCommand, matchTopic} from "./helpers"
 
 export default class ClientWrapper {
   constructor(tcpUri, httpUri, options) {
@@ -75,7 +75,7 @@ export default class ClientWrapper {
       if (!this.subscriptions[topic]) {
         subscribe = true
         this.subscriptions[topic] = {
-          regexp: topicRegexp(topic),
+          matchTopic: matchTopic(topic),
           handlers: []
         }
       }
@@ -124,7 +124,7 @@ export default class ClientWrapper {
     let showError = false
 
     forOwn(this.subscriptions, (subscription) => {
-      if (subscription.regexp.test(topic)) {
+      if (subscription.matchTopic(topic)) {
         subscription.handlers.forEach(({callback, options}) => {
           if (get(options, "parseJson", true)) {
             if (success) {

@@ -1,8 +1,18 @@
 /* eslint-env mocha */
 
-import {expect} from "chai"
+import chai, {expect} from "chai"
 
-import {isEventOrCommand, topicRegexp} from "../src/helpers"
+import {isEventOrCommand, matchTopic} from "../src/helpers"
+
+chai.use(function({Assertion}) {
+  Assertion.addMethod("matchTopic", function(topic) {
+    this.assert(
+      matchTopic(this._obj)(topic),
+      "expected #{this} to match " + topic,
+      "expected #{this} not to match " + topic
+    )
+  })
+})
 
 describe("Helpers", function() {
   it("should identify event and command topics", function() {
@@ -16,55 +26,66 @@ describe("Helpers", function() {
     expect(isEventOrCommand("foo/bar/doBaz")).to.be.true
   })
 
-  it("should create simple topic regexp", function() {
-    const re = topicRegexp("foo/bar/baz")
+  it("should match topic without wildcard", function() {
+    const subscription = "foo/bar/baz"
 
-    expect("foo/bar/baz").to.match(re)
+    expect(subscription).to.matchTopic("foo/bar/baz")
 
-    expect("foo/bar/bazinga").not.to.match(re)
-    expect("foo/bar/ba").not.to.match(re)
-    expect("foo/bar/.*").not.to.match(re)
+    expect(subscription).not.to.matchTopic("foo/bar/bazinga")
+    expect(subscription).not.to.matchTopic("foo/bar/ba")
+    expect(subscription).not.to.matchTopic("foo/bar/.*")
   })
 
-  it("should create wildcard topic regexp with plus", function() {
-    const re = topicRegexp("foo/+/baz")
+  it("should match topic with 'plus' wildcard", function() {
+    const subscription = "foo/+/baz"
 
-    expect("foo/bar/baz").to.match(re)
-    expect("foo/lala/baz").to.match(re)
+    expect(subscription).to.matchTopic("foo/bar/baz")
+    expect(subscription).to.matchTopic("foo/lala/baz")
 
-    expect("foo/lala/bazinga").not.to.match(re)
-    expect("foo/lala/ba").not.to.match(re)
+    expect(subscription).not.to.matchTopic("foo/lala/bazinga")
+    expect(subscription).not.to.matchTopic("foo/lala/ba")
+    expect(subscription).not.to.matchTopic("something/else")
   })
 
-  it("should create wildcard topic regexp with trailing plus", function() {
-    const re = topicRegexp("foo/bar/+")
+  it("should match topic with trailing 'plus' wildcard", function() {
+    const subscription = "foo/bar/+"
 
-    expect("foo/bar/baz").to.match(re)
-    expect("foo/bar/bazinga").to.match(re)
+    expect(subscription).to.matchTopic("foo/bar/baz")
+    expect(subscription).to.matchTopic("foo/bar/bazinga")
 
-    expect("foo/bar").not.to.match(re)
-    expect("foo/bar/ba/zin/ga").not.to.match(re)
-    expect("foo/lala/baz").not.to.match(re)
+    expect(subscription).not.to.matchTopic("foo/bar")
+    expect(subscription).not.to.matchTopic("foo/bar/ba/zin/ga")
+    expect(subscription).not.to.matchTopic("foo/lala/baz")
   })
 
-  it("should create wildcard topic regexp with hash", function() {
-    const re = topicRegexp("foo/bar/#")
+  it("should match topic with leading 'plus' wildcard", function() {
+    const subscription = "+/foo/bar"
 
-    expect("foo/bar/baz").to.match(re)
-    expect("foo/bar/bazinga").to.match(re)
-    expect("foo/bar/ba").to.match(re)
-    expect("foo/bar/ba/zin/ga").to.match(re)
-    expect("foo/bar").to.match(re)
+    expect(subscription).to.matchTopic("one/foo/bar")
+    expect(subscription).to.matchTopic("two/foo/bar")
 
-    expect("foo/barista").not.to.match(re)
-    expect("foo/lala").not.to.match(re)
+    expect(subscription).not.to.matchTopic("foo/bar")
+    expect(subscription).not.to.matchTopic("one/foo/bar/baz")
   })
 
-  it("should create wildcard topic regexp with hash only", function() {
-    const re = topicRegexp("#")
+  it("should match topic with 'hash' wildcard", function() {
+    const subscription = "foo/bar/#"
 
-    expect("foo").to.match(re)
-    expect("foo/bar").to.match(re)
-    expect("").to.match(re)
+    expect(subscription).to.matchTopic("foo/bar/baz")
+    expect(subscription).to.matchTopic("foo/bar/bazinga")
+    expect(subscription).to.matchTopic("foo/bar/ba")
+    expect(subscription).to.matchTopic("foo/bar/ba/zin/ga")
+    expect(subscription).to.matchTopic("foo/bar")
+
+    expect(subscription).not.to.matchTopic("foo/barista")
+    expect(subscription).not.to.matchTopic("foo/lala")
+  })
+
+  it("should match topic with 'hash' wildcard only", function() {
+    const subscription = "#"
+
+    expect(subscription).to.matchTopic("foo")
+    expect(subscription).to.matchTopic("foo/bar")
+    expect(subscription).to.matchTopic("")
   })
 })

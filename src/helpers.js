@@ -1,3 +1,5 @@
+import zip from "lodash.zip"
+
 function isUpperCase(string) {
   return string.toUpperCase() === string
 }
@@ -11,14 +13,20 @@ export function isEventOrCommand(topic) {
     && isUpperCase(lastTopicLevel.charAt(2))
 }
 
-function escapeRegExp(string) {
-  return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
-}
+export function matchTopic(subscription) {
+  const subLevels = subscription.split("/")
+  const wildcardIndex = subLevels.indexOf("#") === -1 ? Infinity : subLevels.indexOf("#")
 
-export function topicRegexp(topic) {
-  const string = escapeRegExp(topic)
-    .replace(/\/\\\+/g, "\/[^\/]*")
-    .replace(/^#$/, ".*")
-    .replace(/\/#$/g, "(\/.*)?")
-  return new RegExp("^" + string + "$")
+  function matchLevel([sub, top], index) {
+    return sub === top || sub === "+" && top !== undefined || index >= wildcardIndex
+  }
+
+  return function(topic) {
+    if (topic === subscription) {
+      return true
+    }
+
+    const topLevels = topic.split("/")
+    return zip(subLevels, topLevels).every(matchLevel)
+  }
 }
