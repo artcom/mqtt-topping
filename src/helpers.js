@@ -16,8 +16,8 @@ function escapeRegExp(string) {
 }
 
 export function topicRegexp(topic) {
-  const string = "^" + escapeRegExp(topic)
+  const string = escapeRegExp(topic)
     .replace(/\/\\\+/g, "\/[^\/]*")
-    .replace(/\/#$/g, "(\/.*)?") + "$"
-  return new RegExp(string)
+    .replace(/\/#$/g, "(\/.*)?")
+  return new RegExp("^" + string + "$")
 }
