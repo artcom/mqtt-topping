@@ -59,4 +59,12 @@ describe("Helpers", function() {
     expect("foo/barista").not.to.match(re)
     expect("foo/lala").not.to.match(re)
   })
+
+  it("should create wildcard topic regexp with hash only", function() {
+    const re = topicRegexp("#")
+
+    expect("foo").to.match(re)
+    expect("foo/bar").to.match(re)
+    expect("").to.match(re)
+  })
 })
