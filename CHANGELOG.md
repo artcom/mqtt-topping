@@ -2,6 +2,18 @@
 All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
+## [0.6.2] - unreleased
+
+### Added
+- Parsing of JSON payloads can be disabled for individual subscriptions using `subscribe(topic, { parseJson: false }, callback)`.
+
+### Changed
+- The `axios` dependency was updated.
+
+### Fixed
+- Subscribing to "#"
+- Subscriptions with a leading "+" wildcard
+
 ## [0.6.1] - 2015-12-08
 
 ### Added
