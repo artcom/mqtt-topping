@@ -2,7 +2,7 @@
 All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
-## [0.6.2] - unreleased
+## [0.6.2] - 2015-12-18
 
 ### Added
 - Parsing of JSON payloads can be disabled for individual subscriptions using `subscribe(topic, { parseJson: false }, callback)`.
