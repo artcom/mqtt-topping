@@ -22,10 +22,6 @@ export function matchTopic(subscription) {
   }
 
   return function(topic) {
-    if (topic === subscription) {
-      return true
-    }
-
     const topLevels = topic.split("/")
     return zip(subLevels, topLevels).every(matchLevel)
   }
