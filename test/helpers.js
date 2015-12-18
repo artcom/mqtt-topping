@@ -30,14 +30,33 @@ describe("Helpers", function() {
 
   describe("matchTopic", function() {
     context("without wildcards", function() {
-      it("should match topic without wildcard", function() {
-        const subscription = "foo/bar/baz"
+      it("should match one-level topic", function() {
+        const subscription = "foo"
+        expect(subscription).to.matchTopic("foo")
 
+        expect(subscription).not.to.matchTopic("foo/bar")
+        expect(subscription).not.to.matchTopic("foo/bar/baz")
+        expect(subscription).not.to.matchTopic("foosball")
+        expect(subscription).not.to.matchTopic("/foo")
+      })
+
+      it("should match multi-level topic", function() {
+        const subscription = "foo/bar/baz"
         expect(subscription).to.matchTopic("foo/bar/baz")
 
         expect(subscription).not.to.matchTopic("foo/bar/bazinga")
         expect(subscription).not.to.matchTopic("foo/bar/ba")
         expect(subscription).not.to.matchTopic("foo/bar/.*")
+      })
+
+      it("should match topic with leading slash", function() {
+        const subscription = "/foo"
+        expect(subscription).to.matchTopic("/foo")
+
+        expect(subscription).not.to.matchTopic("foo")
+        expect(subscription).not.to.matchTopic("foo/bar")
+        expect(subscription).not.to.matchTopic("/foo/bar")
+        expect(subscription).not.to.matchTopic("/foosball")
       })
     })
 
@@ -73,6 +92,17 @@ describe("Helpers", function() {
         expect(subscription).not.to.matchTopic("foo/bar")
         expect(subscription).not.to.matchTopic("one/foo/bar/baz")
       })
+
+      it("should match topic with multiple 'plus' wildcards", function() {
+        const subscription = "foo/+/+/bar"
+
+        expect(subscription).to.matchTopic("foo/to/the/bar")
+        expect(subscription).to.matchTopic("foo/is/a/bar")
+
+        expect(subscription).not.to.matchTopic("foo/is/a/bar/not")
+        expect(subscription).not.to.matchTopic("foo/to/bar")
+        expect(subscription).not.to.matchTopic("/foo/to/the/bar")
+      })
     })
 
     context("'hash' wildcards", function() {
@@ -95,6 +125,25 @@ describe("Helpers", function() {
         expect(subscription).to.matchTopic("foo")
         expect(subscription).to.matchTopic("foo/bar")
         expect(subscription).to.matchTopic("")
+      })
+
+      it("should match topic with 'hash' and 'plus' wildcard", function() {
+        const subscription = "foo/+/bar/#"
+
+        expect(subscription).to.matchTopic("foo/and/bar")
+        expect(subscription).to.matchTopic("foo/or/bar/baz")
+
+        expect(subscription).not.to.matchTopic("foo/bar")
+        expect(subscription).not.to.matchTopic("foo/bar/baz")
+        expect(subscription).not.to.matchTopic("foo/to/barista")
+      })
+    })
+
+    context("with regexp characters", function() {
+      it("should not be confused by a dot in the subscription string", function() {
+        const subscription = "foo2.0"
+        expect(subscription).to.matchTopic("foo2.0")
+        expect(subscription).not.to.matchTopic("foo200")
       })
     })
   })
