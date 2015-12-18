@@ -125,19 +125,21 @@ export default class ClientWrapper {
 
     forOwn(this.subscriptions, (subscription) => {
       if (subscription.matchTopic(topic)) {
-        subscription.handlers.forEach(({callback, options}) => {
-          if (get(options, "parseJson", true)) {
-            if (success) {
-              callback(json, topic, packet)
-            } else {
-              showError = true
-            }
-          } else {
-            callback(payload.toString(), topic, packet)
-          }
-        })
+        subscription.handlers.forEach(callHandler)
       }
     })
+
+    function callHandler({callback, options}) {
+      if (get(options, "parseJson", true)) {
+        if (success) {
+          callback(json, topic, packet)
+        } else {
+          showError = true
+        }
+      } else {
+        callback(payload.toString(), topic, packet)
+      }
+    }
 
     if (showError) {
       console.log(`ignoring MQTT message for topic '${topic}': invalid JSON payload '${payload}'`)
