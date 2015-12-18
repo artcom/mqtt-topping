@@ -15,7 +15,7 @@
     "url": "https://github.com/artcom/mqtt-topping.git"
   },
   "dependencies": {
-    "axios": "^0.7.0",
+    "axios": "^0.8.1",
     "lodash.forown": "^3.0.2",
     "lodash.get": "^3.7.0",
     "lodash.omit": "^3.1.0",
