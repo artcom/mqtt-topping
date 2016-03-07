@@ -1,9 +1,9 @@
 /* eslint-env mocha */
 
-import chai, {expect} from "chai"
+import chai, { expect } from "chai"
 import chaiAsPromised from "chai-as-promised"
 
-import {waitFor} from "./testHelpers"
+import { waitFor } from "./testHelpers"
 import topping from "../src/topping"
 
 chai.use(chaiAsPromised)
@@ -116,7 +116,7 @@ describe("HTTP Query API", function() {
     it("should query multiple topics", function() {
       const query = this.client.query([
         { topic: this.testTopic + "/foo" },
-        { topic: this.testTopic + "/baz"}
+        { topic: this.testTopic + "/baz" }
       ])
 
       return expect(query).to.eventually.deep.equal([
@@ -128,7 +128,7 @@ describe("HTTP Query API", function() {
     it("should include errors in the results", function() {
       const query = this.client.query([
         { topic: this.testTopic + "/foo" },
-        { topic: this.testTopic + "/does-not-exist"}
+        { topic: this.testTopic + "/does-not-exist" }
       ])
 
       return expect(query).to.eventually.deep.equal([

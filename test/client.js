@@ -1,11 +1,11 @@
 /* eslint-env mocha */
 
-import chai, {expect} from "chai"
+import chai, { expect } from "chai"
 import chaiAsPromised from "chai-as-promised"
 import sinon from "sinon"
 import sinonChai from "sinon-chai"
 
-import {waitFor} from "./testHelpers"
+import { waitFor } from "./testHelpers"
 import topping from "../src/topping"
 
 chai.use(chaiAsPromised)

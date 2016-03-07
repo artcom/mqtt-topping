@@ -16,7 +16,7 @@ export default class QueryWrapper {
   }
 
   sendBatch(queries) {
-    return axios.post(this.queryUri, queries.map(omitParseJson)).then(({data}) => {
+    return axios.post(this.queryUri, queries.map(omitParseJson)).then(({ data }) => {
       return data.map((result, index) => {
         const query = queries[index]
 
@@ -37,13 +37,13 @@ export default class QueryWrapper {
   }
 
   sendSingle(query) {
-    return axios.post(this.queryUri, omitParseJson(query)).then(({data}) => {
+    return axios.post(this.queryUri, omitParseJson(query)).then(({ data }) => {
       if (shouldParseJson(query)) {
         parsePayloads(data)
       }
 
       return data
-    }).catch(({data}) => {
+    }).catch(({ data }) => {
       throw data
     })
   }

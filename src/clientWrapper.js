@@ -4,7 +4,7 @@ import remove from "lodash.remove"
 import mqtt from "mqtt"
 
 import QueryWrapper from "./queryWrapper"
-import {isEventOrCommand, matchTopic} from "./helpers"
+import { isEventOrCommand, matchTopic } from "./helpers"
 
 export default class ClientWrapper {
   constructor(tcpUri, httpUri, options) {
@@ -80,7 +80,7 @@ export default class ClientWrapper {
         }
       }
 
-      this.subscriptions[topic].handlers.push({callback, options})
+      this.subscriptions[topic].handlers.push({ callback, options })
 
       if (subscribe && this.isConnected) {
         this.client.subscribe(topic, { qos: 2 }, resolve)
@@ -129,7 +129,7 @@ export default class ClientWrapper {
       }
     })
 
-    function callHandler({callback, options}) {
+    function callHandler({ callback, options }) {
       if (get(options, "parseJson", true)) {
         if (success) {
           callback(json, topic, packet)
