@@ -156,6 +156,32 @@ describe("MQTT Client", function() {
   })
 
   describe("publish", function() {
+    it("should use QoS 2 by default", function() {
+      const handler = sinon.spy()
+      const eventTopic = this.testTopic + "/onEvent"
+
+      return this.client.subscribe(eventTopic, handler).then(() => {
+        return this.client.publish(eventTopic, "hello")
+      }).then(() => {
+        return waitFor(() => handler.called)
+      }).then(() => {
+        expect(handler).to.have.been.calledWith("hello", eventTopic, sinon.match({ qos: 2 }))
+      })
+    })
+
+    it("should override QoS", function() {
+      const handler = sinon.spy()
+      const eventTopic = this.testTopic + "/onEvent"
+
+      return this.client.subscribe(eventTopic, handler).then(() => {
+        return this.client.publish(eventTopic, "hello", { qos: 0 })
+      }).then(() => {
+        return waitFor(() => handler.called)
+      }).then(() => {
+        expect(handler).to.have.been.calledWith("hello", eventTopic, sinon.match({ qos: 0 }))
+      })
+    })
+
     it("should publish messages without stringifying", function() {
       const topic = this.testTopic + "/raw"
 

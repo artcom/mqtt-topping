@@ -27,14 +27,14 @@ export default class ClientWrapper {
     return this.queryWrapper.send(query)
   }
 
-  publish(topic, payload, options = {}) {
-    if (get(options, "stringifyJson", true)) {
+  publish(topic, payload, { qos = 2, stringifyJson = true } = {}) {
+    if (stringifyJson) {
       payload = JSON.stringify(payload)
     }
 
     return new Promise((resolve) => {
       const retain = !isEventOrCommand(topic)
-      this.client.publish(topic, payload, { retain: retain, qos: 2 }, resolve)
+      this.client.publish(topic, payload, { retain: retain, qos }, resolve)
     })
   }
 
