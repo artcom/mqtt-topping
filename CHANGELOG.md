@@ -7,6 +7,9 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 ### Added
 - `publish()` now handles the `qos` option to set the quality of service (defaulting to 2).
 
+### Changed
+- The `axios` and `lodash` dependencies were updated.
+
 ## [0.6.2] - 2015-12-18
 
 ### Added

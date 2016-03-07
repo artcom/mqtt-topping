@@ -15,12 +15,12 @@
     "url": "https://github.com/artcom/mqtt-topping.git"
   },
   "dependencies": {
-    "axios": "^0.8.1",
-    "lodash.forown": "^3.0.2",
-    "lodash.get": "^3.7.0",
-    "lodash.omit": "^3.1.0",
-    "lodash.remove": "^3.1.0",
-    "lodash.zip": "^3.1.0",
+    "axios": "^0.9.1",
+    "lodash.forown": "^4.0.1",
+    "lodash.get": "^4.1.2",
+    "lodash.omit": "^4.1.0",
+    "lodash.remove": "^4.2.0",
+    "lodash.zip": "^4.0.0",
     "mqtt": "^1.4.0"
   },
   "devDependencies": {
