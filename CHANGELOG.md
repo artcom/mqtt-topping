@@ -2,7 +2,7 @@
 All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
-## [0.6.3] - unreleased
+## [0.6.3] - 2016-03-09
 
 ### Added
 - `publish()` now handles the `qos` option to set the quality of service (defaulting to 2).
