@@ -1,5 +1,3 @@
-/* eslint-env mocha */
-
 import chai, { expect } from "chai"
 
 import { isEventOrCommand, matchTopic } from "../src/helpers"
@@ -8,8 +6,8 @@ chai.use(function({ Assertion }) {
   Assertion.addMethod("matchTopic", function(topic) {
     this.assert(
       matchTopic(this._obj)(topic),
-      "expected #{this} to match " + topic,
-      "expected #{this} not to match " + topic
+      `expected #{this} to match ${topic}`,
+      `expected #{this} not to match ${topic}`
     )
   })
 })

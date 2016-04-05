@@ -4,7 +4,7 @@ import omit from "lodash.omit"
 
 export default class QueryWrapper {
   constructor(uri) {
-    this.queryUri = uri + "/query"
+    this.queryUri = `${uri}/query`
   }
 
   send(query) {
@@ -16,8 +16,8 @@ export default class QueryWrapper {
   }
 
   sendBatch(queries) {
-    return axios.post(this.queryUri, queries.map(omitParseJson)).then(({ data }) => {
-      return data.map((result, index) => {
+    return axios.post(this.queryUri, queries.map(omitParseJson)).then(({ data }) =>
+      data.map((result, index) => {
         const query = queries[index]
 
         if (shouldParseJson(query)) {
@@ -33,7 +33,7 @@ export default class QueryWrapper {
 
         return result
       })
-    })
+    )
   }
 
   sendSingle(query) {

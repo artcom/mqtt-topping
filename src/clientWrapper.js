@@ -34,7 +34,7 @@ export default class ClientWrapper {
 
     return new Promise((resolve) => {
       const retain = !isEventOrCommand(topic)
-      this.client.publish(topic, payload, { retain: retain, qos }, resolve)
+      this.client.publish(topic, payload, { retain, qos }, resolve)
     })
   }
 

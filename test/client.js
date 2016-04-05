@@ -1,4 +1,4 @@
-/* eslint-env mocha */
+/* eslint "no-console": "off" */
 
 import chai, { expect } from "chai"
 import chaiAsPromised from "chai-as-promised"
@@ -21,13 +21,13 @@ describe("MQTT Client", function() {
     sinon.spy(console, "log")
 
     this.client = topping.connect(tcpBrokerUri, httpBrokerUri)
-    this.testTopic = "test/topping-" + Date.now()
+    this.testTopic = `test/topping-${Date.now()}`
 
-    return waitFor(() => this.client.isConnected).then(() => {
-      return this.client.publish(this.testTopic + "/foo", "bar")
-    }).then(() => {
-      return this.client.publish(this.testTopic + "/baz", 23)
-    })
+    return waitFor(() => this.client.isConnected).then(() =>
+      this.client.publish(`${this.testTopic}/foo`, "bar")
+    ).then(() =>
+      this.client.publish(`${this.testTopic}/baz`, 23)
+    )
   })
 
   afterEach(function() {
@@ -40,24 +40,24 @@ describe("MQTT Client", function() {
       const fooHandler = sinon.spy()
       const bazHandler = sinon.spy()
 
-      this.client.subscribe(this.testTopic + "/foo", fooHandler)
-      this.client.subscribe(this.testTopic + "/baz", bazHandler)
+      this.client.subscribe(`${this.testTopic}/foo`, fooHandler)
+      this.client.subscribe(`${this.testTopic}/baz`, bazHandler)
 
       return waitFor(() => fooHandler.called && bazHandler.called).then(() => {
-        expect(fooHandler).to.have.been.calledOnce.and.calledWith("bar", this.testTopic + "/foo")
-        expect(bazHandler).to.have.been.calledOnce.and.calledWith(23, this.testTopic + "/baz")
+        expect(fooHandler).to.have.been.calledOnce.and.calledWith("bar", `${this.testTopic}/foo`)
+        expect(bazHandler).to.have.been.calledOnce.and.calledWith(23, `${this.testTopic}/baz`)
       })
     })
 
     it("should retrieve non-retained messages", function() {
       const handler = sinon.spy()
-      const eventTopic = this.testTopic + "/onEvent"
+      const eventTopic = `${this.testTopic}/onEvent`
 
-      return this.client.subscribe(eventTopic, handler).then(() => {
-        return this.client.publish(eventTopic, "hello")
-      }).then(() => {
-        return waitFor(() => handler.called)
-      }).then(() => {
+      return this.client.subscribe(eventTopic, handler).then(() =>
+        this.client.publish(eventTopic, "hello")
+      ).then(() =>
+        waitFor(() => handler.called)
+      ).then(() => {
         expect(handler).to.have.been.calledWith("hello", eventTopic)
       })
     })
@@ -65,43 +65,43 @@ describe("MQTT Client", function() {
     it("should receive messages with empty payload", function() {
       const handler = sinon.spy()
 
-      return this.client.subscribe(this.testTopic + "/foo", handler).then(() => {
-        return this.client.unpublish(this.testTopic + "/foo")
-      }).then(() => {
-        return waitFor(() => handler.calledTwice)
-      }).then(() => {
-        expect(handler).to.have.been.calledWith("bar", this.testTopic + "/foo")
-        expect(handler).to.have.been.calledWith(undefined, this.testTopic + "/foo")
+      return this.client.subscribe(`${this.testTopic}/foo`, handler).then(() =>
+        this.client.unpublish(`${this.testTopic}/foo`)
+      ).then(() =>
+        waitFor(() => handler.calledTwice)
+      ).then(() => {
+        expect(handler).to.have.been.calledWith("bar", `${this.testTopic}/foo`)
+        expect(handler).to.have.been.calledWith(undefined, `${this.testTopic}/foo`)
       })
     })
 
     context("with wildcard", function() {
       it("should retrieve retained messages using hash wildcard", function() {
         const handler = sinon.spy()
-        this.client.subscribe(this.testTopic + "/#", handler)
+        this.client.subscribe(`${this.testTopic}/#`, handler)
 
         return waitFor(() => handler.calledTwice).then(() => {
           expect(handler).to.have.been
-            .calledWith("bar", this.testTopic + "/foo")
-            .calledWith(23, this.testTopic + "/baz")
+            .calledWith("bar", `${this.testTopic}/foo`)
+            .calledWith(23, `${this.testTopic}/baz`)
         })
       })
 
       it("should retrieve retained messages using plus wildcard", function() {
         const handler = sinon.spy()
-        this.client.subscribe(this.testTopic + "/+", handler)
+        this.client.subscribe(`${this.testTopic}/+`, handler)
 
         return waitFor(() => handler.calledTwice).then(() => {
           expect(handler).to.have.been
-            .calledWith("bar", this.testTopic + "/foo")
-            .calledWith(23, this.testTopic + "/baz")
+            .calledWith("bar", `${this.testTopic}/foo`)
+            .calledWith(23, `${this.testTopic}/baz`)
         })
       })
     })
 
     it("should ignore malformed JSON payloads", function() {
       const handler = sinon.spy()
-      const eventTopic = this.testTopic + "/onEvent"
+      const eventTopic = `${this.testTopic}/onEvent`
 
       return this.client.subscribe(eventTopic, handler).then(() => {
         this.client.client.publish(eventTopic, "this is invalid JSON")
@@ -117,7 +117,7 @@ describe("MQTT Client", function() {
 
     it("should receive raw payload when JSON parsing is disabled", function() {
       const handler = sinon.spy()
-      const eventTopic = this.testTopic + "/onEvent"
+      const eventTopic = `${this.testTopic}/onEvent`
 
       return this.client.subscribe(eventTopic, { parseJson: false }, handler).then(() => {
         this.client.client.publish(eventTopic, "this is invalid JSON")
@@ -132,23 +132,23 @@ describe("MQTT Client", function() {
 
     it("should not receive messages after unsubscribing", function() {
       const handler = sinon.spy()
-      const eventTopic = this.testTopic + "/onEvent"
+      const eventTopic = `${this.testTopic}/onEvent`
 
-      return this.client.subscribe(eventTopic, handler).then(() => {
-        return this.client.publish(eventTopic, "hello")
-      }).then(() => {
-        return waitFor(() => handler.called)
-      }).then(() => {
-        return this.client.unsubscribe(eventTopic, handler)
-      }).then(() => {
-        return this.client.publish(eventTopic, "goodbye")
-      }).then(() => {
-        return this.client.subscribe(eventTopic, handler)
-      }).then(() => {
-        return this.client.publish(eventTopic, "hello again")
-      }).then(() => {
-        return waitFor(() => handler.calledTwice)
-      }).then(() => {
+      return this.client.subscribe(eventTopic, handler).then(() =>
+        this.client.publish(eventTopic, "hello")
+      ).then(() =>
+        waitFor(() => handler.called)
+      ).then(() =>
+        this.client.unsubscribe(eventTopic, handler)
+      ).then(() =>
+        this.client.publish(eventTopic, "goodbye")
+      ).then(() =>
+        this.client.subscribe(eventTopic, handler)
+      ).then(() =>
+        this.client.publish(eventTopic, "hello again")
+      ).then(() =>
+        waitFor(() => handler.calledTwice)
+      ).then(() => {
         expect(handler).not.to.have.been.calledWith("goodbye")
         expect(handler).to.have.been.calledWith("hello again")
       })
@@ -158,32 +158,32 @@ describe("MQTT Client", function() {
   describe("publish", function() {
     it("should use QoS 2 by default", function() {
       const handler = sinon.spy()
-      const eventTopic = this.testTopic + "/onEvent"
+      const eventTopic = `${this.testTopic}/onEvent`
 
-      return this.client.subscribe(eventTopic, handler).then(() => {
-        return this.client.publish(eventTopic, "hello")
-      }).then(() => {
-        return waitFor(() => handler.called)
-      }).then(() => {
+      return this.client.subscribe(eventTopic, handler).then(() =>
+        this.client.publish(eventTopic, "hello")
+      ).then(() =>
+        waitFor(() => handler.called)
+      ).then(() => {
         expect(handler).to.have.been.calledWith("hello", eventTopic, sinon.match({ qos: 2 }))
       })
     })
 
     it("should override QoS", function() {
       const handler = sinon.spy()
-      const eventTopic = this.testTopic + "/onEvent"
+      const eventTopic = `${this.testTopic}/onEvent`
 
-      return this.client.subscribe(eventTopic, handler).then(() => {
-        return this.client.publish(eventTopic, "hello", { qos: 0 })
-      }).then(() => {
-        return waitFor(() => handler.called)
-      }).then(() => {
+      return this.client.subscribe(eventTopic, handler).then(() =>
+        this.client.publish(eventTopic, "hello", { qos: 0 })
+      ).then(() =>
+        waitFor(() => handler.called)
+      ).then(() => {
         expect(handler).to.have.been.calledWith("hello", eventTopic, sinon.match({ qos: 0 }))
       })
     })
 
     it("should publish messages without stringifying", function() {
-      const topic = this.testTopic + "/raw"
+      const topic = `${this.testTopic}/raw`
 
       return this.client.publish(topic, "invalid\nJSON", { stringifyJson: false }).then(() => {
         const query = this.client.query({ topic, parseJson: false })
@@ -192,16 +192,15 @@ describe("MQTT Client", function() {
     })
 
     it("should unpublish messages", function() {
-      return this.client.unpublish(this.testTopic + "/foo").then(() => {
-        const query = this.client.query({
-          topic: this.testTopic,
-          depth: 1
-        }).then((result) => result.children)
+      const query = this.client.unpublish(`${this.testTopic}/foo`).then(() =>
+        this.client.query({ topic: this.testTopic, depth: 1 })
+      ).then((result) =>
+        result.children
+      )
 
-        return expect(query).to.eventually.deep.equal([
-          { topic: this.testTopic + "/baz", payload: 23 }
-        ])
-      })
+      return expect(query).to.eventually.deep.equal([
+        { topic: `${this.testTopic}/baz`, payload: 23 }
+      ])
     })
 
     it("should unpublish messages recursively", function() {

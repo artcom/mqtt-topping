@@ -21,7 +21,7 @@ export function matchTopic(subscription) {
     return sub === top || sub === "+" && top !== undefined || index >= wildcardIndex
   }
 
-  return function(topic) {
+  return (topic) => {
     const topLevels = topic.split("/")
     return zip(subLevels, topLevels).every(matchLevel)
   }
