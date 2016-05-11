@@ -5,7 +5,7 @@ import { isEventOrCommand, matchTopic } from "../src/helpers"
 chai.use(function({ Assertion }) {
   Assertion.addMethod("matchTopic", function(topic) {
     this.assert(
-      matchTopic(this._obj)(topic),
+      matchTopic(this._obj)(topic), // eslint-disable-line no-underscore-dangle
       `expected #{this} to match ${topic}`,
       `expected #{this} not to match ${topic}`
     )
