@@ -30,10 +30,10 @@ describe("Events", function() {
 
     this.client.on("close", close)
 
-    return waitFor(() => this.client.isConnected).then(() => {
-      this.client.client.end()
-      return waitFor(() => !this.client.isConnected)
-    }).then(() => {
+    return waitFor(() => this.client.isConnected).then(() =>
+      this.client.disconnect()
+    ).then(() => {
+      expect(this.client.isConnected).to.be.false
       expect(close).to.have.been.called
     })
   })

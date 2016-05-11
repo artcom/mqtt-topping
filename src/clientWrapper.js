@@ -23,6 +23,12 @@ export default class ClientWrapper {
     this.queryWrapper = new QueryWrapper(httpUri)
   }
 
+  disconnect() {
+    return new Promise((resolve) => {
+      this.client.end(resolve)
+    })
+  }
+
   query(query) {
     return this.queryWrapper.send(query)
   }
