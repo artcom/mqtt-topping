@@ -32,7 +32,7 @@ describe("MQTT Client", function() {
 
   afterEach(function() {
     console.log.restore()
-    return this.client.unpublishRecursively(this.testTopic)
+    return this.client.unpublishRecursively(this.testTopic).then(() => this.client.disconnect())
   })
 
   describe("subscribe", function() {

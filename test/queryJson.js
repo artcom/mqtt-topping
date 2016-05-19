@@ -29,7 +29,7 @@ describe("JSON Query API", function() {
   })
 
   afterEach(function() {
-    return this.client.unpublishRecursively(this.testTopic)
+    return this.client.unpublishRecursively(this.testTopic).then(() => this.client.disconnect())
   })
 
   describe("Single Queries", function() {
