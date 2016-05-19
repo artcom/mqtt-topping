@@ -33,6 +33,10 @@ export default class ClientWrapper {
     return this.queryWrapper.send(query)
   }
 
+  queryJson(query) {
+    return this.queryWrapper.sendJson(query)
+  }
+
   publish(topic, payload, { qos = 2, stringifyJson = true } = {}) {
     if (stringifyJson) {
       payload = JSON.stringify(payload)

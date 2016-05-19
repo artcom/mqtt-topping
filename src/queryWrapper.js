@@ -15,6 +15,14 @@ export default class QueryWrapper {
     }
   }
 
+  sendJson(query) {
+    const jsonQuery = Object.assign({}, query, { depth: -1, parseJson: false })
+
+    return this.sendSingle(jsonQuery)
+      .then(makeObject)
+      .catch(() => ({}))
+  }
+
   sendBatch(queries) {
     return axios.post(this.queryUri, queries.map(omitParseJson)).then(({ data }) =>
       data.map((result, index) => {
@@ -46,6 +54,28 @@ export default class QueryWrapper {
     }).catch(({ data }) => {
       throw data
     })
+  }
+}
+
+function makeObject(result, isRoot = true) {
+  if (result.children) {
+    const object = {}
+
+    result.children.forEach((child) => {
+      const key = child.topic.split("/").pop()
+
+      try {
+        object[key] = makeObject(child, false)
+      } catch (e) {
+        // ignore children that contain invalid JSON
+      }
+    })
+
+    return object
+  } else if (!isRoot) {
+    return JSON.parse(result.payload)
+  } else {
+    return {}
   }
 }
 
