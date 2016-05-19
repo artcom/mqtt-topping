@@ -2,6 +2,11 @@
 All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
+## [0.6.5] - unreleased
+
+### Added
+- The `queryJson()` method can be used to query retained topics as a JSON object tree.
+
 ## [0.6.4] - 2016-05-11
 
 ### Added
