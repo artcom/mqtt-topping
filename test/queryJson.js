@@ -82,28 +82,23 @@ describe("JSON Query API", function() {
     })
   })
 
-  xdescribe("Batch Queries", function() {
+  describe("Batch Queries", function() {
     it("should query multiple topics", function() {
       const query = this.client.queryJson([
-        { topic: `${this.testTopic}/foo` },
-        { topic: `${this.testTopic}/baz` }
-      ])
-
-      return expect(query).to.eventually.deep.equal([
-        { topic: `${this.testTopic}/foo`, payload: "bar" },
-        { topic: `${this.testTopic}/baz`, payload: 23 }
-      ])
-    })
-
-    it("should include errors in the results", function() {
-      const query = this.client.queryJson([
-        { topic: `${this.testTopic}/foo` },
+        { topic: `${this.testTopic}/nested1` },
+        { topic: `${this.testTopic}/nested2` },
         { topic: `${this.testTopic}/does-not-exist` }
       ])
 
       return expect(query).to.eventually.deep.equal([
-        { topic: `${this.testTopic}/foo`, payload: "bar" },
-        { topic: `${this.testTopic}/does-not-exist`, error: 404 }
+        {
+          one: 1,
+          two: 2
+        },
+        {
+          one: 10
+        },
+        {}
       ])
     })
   })

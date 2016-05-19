@@ -16,11 +16,14 @@ export default class QueryWrapper {
   }
 
   sendJson(query) {
-    const jsonQuery = Object.assign({}, query, { depth: -1, parseJson: false })
-
-    return this.sendSingle(jsonQuery)
-      .then(makeObject)
-      .catch(() => ({}))
+    if (Array.isArray(query)) {
+      return this.sendBatch(query.map(makeJsonQuery))
+        .then((results) => results.map(makeObject))
+    } else {
+      return this.sendSingle(makeJsonQuery(query))
+        .then(makeObject)
+        .catch(() => ({}))
+    }
   }
 
   sendBatch(queries) {
@@ -55,6 +58,10 @@ export default class QueryWrapper {
       throw data
     })
   }
+}
+
+function makeJsonQuery(query) {
+  return Object.assign({}, query, { depth: -1, parseJson: false })
 }
 
 function makeObject(result, isRoot = true) {
