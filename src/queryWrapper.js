@@ -61,6 +61,10 @@ export default class QueryWrapper {
 }
 
 function makeJsonQuery(query) {
+  if (query.topic.includes("+")) {
+    throw new Error("Wildcards are not supported in queryJson().")
+  }
+
   return Object.assign({}, query, { depth: -1, parseJson: false })
 }
 
