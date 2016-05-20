@@ -53,7 +53,7 @@ The query API allows single and batch queries including wildcard topics via HTTP
 
 ##### Boolean `parseJson`
 
-If `false` the `result.payload` contains the raw payload as String. Default is `true`.
+If `false` `result.payload` contains the raw payload as String. Default is `true`.
 
 ##### Number `depth`
 
