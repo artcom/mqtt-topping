@@ -57,11 +57,11 @@ If `false` the `result.payload` contains the raw payload as String. Default is `
 
 ##### Number `depth`
 
-Specifies the recursive depth of the query. A `depth > 0` returns the subtopics in `result.children`. Default is `0`.
+Specifies the recursive depth of the query. A `depth > 0` returns subtopic results in `result.children`. Default is `0`.
 
 ##### Boolean `flatten`
 
-Flattens all results into a flat array of results. Default is `false`
+Flattens all results into a flat array of results. Default is `false`.
 
 ### QueryJson
 
