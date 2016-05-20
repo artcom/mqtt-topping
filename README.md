@@ -27,18 +27,50 @@ client.subscribe("my/topic", function(payload, topic, packet) {
 
 ## HTTP Query Features
 
-* `JSON.parse` all incoming payloads, unless `parseJson` is set to `false`
+### Query
 
-### Usage
+#### Example
 
 ```javascript
-client.query({ topic: "my/topic" }).then(function(result) {
-  console.log("Payload is " + result.payload);
-});
-
-client.query({ topic: "my/topic", depth: 2, flatten: true }).then(function(results) {
-  results.forEach(function(result) {
-    console.log("topic " + result.topic + " has payload " + result.payload);
-  });
+client.query({ topic: "example", depth: 0, parseJson: true, flatten: false }).then((result) => {
+  // process result
 });
 ```
+
+The query API allows single and batch queries including wildcard topics via HTTP. It specifically supports JSON payloads and parses them if possible. Multiple results of a batch, wildcard or flattened query are structured as `Array` of results. A single result has the format:
+
+```javascript
+{
+  topic: String,
+  payload: PAYLOAD,
+  children?: CHILDREN
+}
+// PAYLOAD = The JSON parsed payload
+// CHILDREN = An array of subtopic results
+```
+
+#### Options
+
+##### Boolean `parseJson`
+
+If `false` the `result.payload` contains the raw payload as String. Default is `true`.
+
+##### Number `depth`
+
+Specifies the recursive depth of the query. A `depth > 0` returns the subtopics in `result.children`. Default is `0`.
+
+##### Boolean `flatten`
+
+Flattens all results into a flat array of results. Default is `false`
+
+### QueryJson
+
+#### Example
+
+```javascript
+client.queryJson({ topic: "example" }).then((result) => {
+  // process result
+});
+```
+
+The queryJson API allows single and batch queries via HTTP. Multiple results of a batch query are structured as `Array` of results. A single result is an object containing subtopics as properties. The subtopics may be objects with subtopics or the json parsed payload.
