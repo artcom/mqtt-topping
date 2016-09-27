@@ -1,9 +1,8 @@
 import forOwn from "lodash.forown"
-import get from "lodash.get"
 import mqtt from "mqtt"
 
 import QueryWrapper from "./queryWrapper"
-import { isEventOrCommand, matchTopic } from "./helpers"
+import { isEventOrCommand, matchTopic, shouldParseJson } from "./helpers"
 
 export default class ClientWrapper {
   constructor(tcpUri, httpUri, options) {
@@ -141,7 +140,7 @@ export default class ClientWrapper {
     })
 
     function callHandler({ callback, options }) {
-      if (get(options, "parseJson", true)) {
+      if (shouldParseJson(options)) {
         if (success) {
           callback(json, topic, packet)
         } else {

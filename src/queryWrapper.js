@@ -1,5 +1,6 @@
 import axios from "axios"
-import get from "lodash.get"
+
+import { shouldParseJson } from "./helpers"
 
 export default class QueryWrapper {
   constructor(uri) {
@@ -93,10 +94,6 @@ function omitParseJson(query) {
   return Object.assign({}, query, {
     parseJson: undefined
   })
-}
-
-function shouldParseJson(query) {
-  return get(query, "parseJson", true)
 }
 
 function parsePayloads(result) {

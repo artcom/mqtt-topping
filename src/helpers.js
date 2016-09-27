@@ -26,3 +26,7 @@ export function matchTopic(subscription) {
     return zip(subLevels, topLevels).every(matchLevel)
   }
 }
+
+export function shouldParseJson(query) {
+  return query.parseJson != null ? query.parseJson : true
+}
