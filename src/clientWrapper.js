@@ -1,4 +1,3 @@
-import forOwn from "lodash.forown"
 import mqtt from "mqtt"
 
 import QueryWrapper from "./queryWrapper"
@@ -133,7 +132,9 @@ export default class ClientWrapper {
     const [success, json] = parsePayload(payload)
     let showError = false
 
-    forOwn(this.subscriptions, (subscription) => {
+    Object.keys(this.subscriptions).forEach((key) => {
+      const subscription = this.subscriptions[key]
+
       if (subscription.matchTopic(topic)) {
         subscription.handlers.forEach(callHandler)
       }

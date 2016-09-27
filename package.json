@@ -16,7 +16,6 @@
   },
   "dependencies": {
     "axios": "^0.9.1",
-    "lodash.forown": "^4.0.1",
     "lodash.zip": "^4.0.0",
     "mqtt": "^1.4.0"
   },
