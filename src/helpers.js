@@ -1,5 +1,3 @@
-import zip from "lodash.zip"
-
 function isUpperCase(string) {
   return string.toUpperCase() === string
 }
@@ -17,13 +15,21 @@ export function matchTopic(subscription) {
   const subLevels = subscription.split("/")
   const wildcardIndex = subLevels.indexOf("#") === -1 ? Infinity : subLevels.indexOf("#")
 
-  function matchLevel([sub, top], index) {
-    return sub === top || sub === "+" && top !== undefined || index >= wildcardIndex
-  }
-
   return (topic) => {
     const topLevels = topic.split("/")
-    return zip(subLevels, topLevels).every(matchLevel)
+    const length = Math.max(subLevels.length, topLevels.length)
+
+    for (let i = 0; i < length; i++) {
+      const sub = subLevels[i]
+      const top = topLevels[i]
+      const match = sub === top || sub === "+" && top !== undefined || i >= wildcardIndex
+
+      if (!match) {
+        return false
+      }
+    }
+
+    return true
   }
 }
 
