@@ -1,6 +1,5 @@
 import forOwn from "lodash.forown"
 import get from "lodash.get"
-import remove from "lodash.remove"
 import mqtt from "mqtt"
 
 import QueryWrapper from "./queryWrapper"
@@ -105,7 +104,9 @@ export default class ClientWrapper {
       const subscription = this.subscriptions[topic]
 
       if (subscription) {
-        remove(subscription.handlers, "callback", callback)
+        subscription.handlers = subscription.handlers.filter((handler) =>
+          handler.callback !== callback
+        )
 
         if (subscription.handlers.length === 0) {
           this.client.unsubscribe(topic, resolve)

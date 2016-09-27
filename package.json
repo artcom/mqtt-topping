@@ -19,7 +19,6 @@
     "lodash.forown": "^4.0.1",
     "lodash.get": "^4.1.2",
     "lodash.omit": "^4.1.0",
-    "lodash.remove": "^4.2.0",
     "lodash.zip": "^4.0.0",
     "mqtt": "^1.4.0"
   },
