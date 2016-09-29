@@ -17,12 +17,12 @@ export function matchTopic(subscription) {
 
   return (topic) => {
     const topLevels = topic.split("/")
-    const length = Math.max(subLevels.length, topLevels.length)
+    const length = Math.min(wildcardIndex, Math.max(subLevels.length, topLevels.length))
 
     for (let i = 0; i < length; i++) {
       const sub = subLevels[i]
       const top = topLevels[i]
-      const match = sub === top || sub === "+" && top !== undefined || i >= wildcardIndex
+      const match = sub === top || sub === "+" && top !== undefined
 
       if (!match) {
         return false
