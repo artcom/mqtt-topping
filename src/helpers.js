@@ -13,7 +13,7 @@ export function isEventOrCommand(topic) {
 
 export function matchTopic(subscription) {
   const subLevels = subscription.split("/")
-  const wildcardIndex = subLevels.indexOf("#") === -1 ? Infinity : subLevels.indexOf("#")
+  const wildcardIndex = subLevels[subLevels.length - 1] === "#" ? subLevels.length - 1 : Infinity
 
   return (topic) => {
     const topLevels = topic.split("/")
