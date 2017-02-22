@@ -14,7 +14,7 @@ A small wrapper around the MQTT.js client and an API to query retained topics vi
 ### Usage
 
 ```javascript
-var topping = require("mqtt-topping");
+var topping = require("mqtt-topping").default;
 
 var client = topping.connect("tcp://broker.example.com", "http://broker.example.com");
 
