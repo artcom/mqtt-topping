@@ -1,6 +1,6 @@
 import ClientWrapper from "./clientWrapper"
 
-module.exports = {
+export default {
   connect(tcpUri, httpUri, options) {
     return new ClientWrapper(tcpUri, httpUri, options)
   }
