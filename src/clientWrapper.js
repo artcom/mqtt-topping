@@ -132,15 +132,12 @@ export default class ClientWrapper {
     const [success, json] = parsePayload(payload)
     let showError = false
 
-    Object.keys(this.subscriptions).forEach((key) => {
+    const handlers = flatMap(Object.keys(this.subscriptions), (key) => {
       const subscription = this.subscriptions[key]
-
-      if (subscription.matchTopic(topic)) {
-        subscription.handlers.forEach(callHandler)
-      }
+      return subscription.matchTopic(topic) ? subscription.handlers : []
     })
 
-    function callHandler({ callback, options }) {
+    handlers.forEach(({ callback, options }) => {
       if (shouldParseJson(options)) {
         if (success) {
           callback(json, topic, packet)
@@ -150,7 +147,7 @@ export default class ClientWrapper {
       } else {
         callback(payload.toString(), topic, packet)
       }
-    }
+    })
 
     if (showError) {
       console.log(`ignoring MQTT message for topic '${topic}': invalid JSON payload '${payload}'`)
@@ -164,4 +161,8 @@ function parsePayload(payload) {
   } catch (error) {
     return [payload.length === 0, undefined]
   }
+}
+
+function flatMap(items, fun) {
+  return Array.prototype.concat(...items.map(fun))
 }

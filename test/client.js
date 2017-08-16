@@ -153,6 +153,20 @@ describe("MQTT Client", function() {
         expect(handler).to.have.been.calledWith("hello again")
       })
     })
+
+    it("should allow unsubscribing from a handler callback", function(done) {
+      const handler = function() {}
+      const outerTopic = `${this.testTopic}/onFoo`
+      const innerTopic = `${this.testTopic}/onBar`
+
+      this.client.subscribe(outerTopic, () => {
+        this.client.unsubscribe(innerTopic, handler).then(done)
+      }).then(() =>
+        this.client.subscribe(innerTopic, handler)
+      ).then(() =>
+        this.client.publish(outerTopic, null)
+      )
+    })
   })
 
   describe("publish", function() {
