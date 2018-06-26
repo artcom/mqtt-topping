@@ -15,7 +15,7 @@
     "url": "https://github.com/artcom/mqtt-topping.git"
   },
   "dependencies": {
-    "axios": "^0.15.3",
+    "axios": "^0.18.0",
     "mqtt": "^2.4.0"
   },
   "devDependencies": {
