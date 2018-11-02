@@ -21,7 +21,7 @@ export default class ClientWrapper {
   }
 
   disconnect() {
-    return new Promise((resolve) => {
+    return new Promise(resolve => {
       this.client.end(resolve)
     })
   }
@@ -39,14 +39,14 @@ export default class ClientWrapper {
       payload = JSON.stringify(payload)
     }
 
-    return new Promise((resolve) => {
+    return new Promise(resolve => {
       const retain = !isEventOrCommand(topic)
       this.client.publish(topic, payload, { retain, qos }, resolve)
     })
   }
 
   unpublish(topic) {
-    return new Promise((resolve) => {
+    return new Promise(resolve => {
       this.client.publish(topic, null, { retain: true, qos: 2 }, resolve)
     })
   }
@@ -57,7 +57,7 @@ export default class ClientWrapper {
       depth: -1,
       flatten: true,
       parseJson: false
-    }).then((subtopics) => {
+    }).then(subtopics => {
       const unpublishPromises = subtopics.reduce((promises, subtopic) => {
         if (subtopic.payload) {
           promises.push(this.unpublish(subtopic.topic))
@@ -76,7 +76,7 @@ export default class ClientWrapper {
       options = {}
     }
 
-    return new Promise((resolve) => {
+    return new Promise(resolve => {
       let subscribe = false
 
       if (!this.subscriptions[topic]) {
@@ -98,11 +98,11 @@ export default class ClientWrapper {
   }
 
   unsubscribe(topic, callback) {
-    return new Promise((resolve) => {
+    return new Promise(resolve => {
       const subscription = this.subscriptions[topic]
 
       if (subscription) {
-        subscription.handlers = subscription.handlers.filter((handler) =>
+        subscription.handlers = subscription.handlers.filter(handler =>
           handler.callback !== callback
         )
 
@@ -119,7 +119,7 @@ export default class ClientWrapper {
   handleConnect() {
     this.isConnected = true
 
-    Object.keys(this.subscriptions).forEach((topic) => {
+    Object.keys(this.subscriptions).forEach(topic => {
       this.client.subscribe(topic, { qos: 2 })
     })
   }
@@ -132,7 +132,7 @@ export default class ClientWrapper {
     const [success, json] = parsePayload(payload)
     let showError = false
 
-    const handlers = flatMap(Object.keys(this.subscriptions), (key) => {
+    const handlers = flatMap(Object.keys(this.subscriptions), key => {
       const subscription = this.subscriptions[key]
       return subscription.matchTopic(topic) ? subscription.handlers : []
     })

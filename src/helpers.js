@@ -15,7 +15,7 @@ export function matchTopic(subscription) {
   const subLevels = subscription.split("/")
   const wildcardIndex = subLevels[subLevels.length - 1] === "#" ? subLevels.length - 1 : Infinity
 
-  return (topic) => {
+  return topic => {
     const topLevels = topic.split("/")
     const length = Math.min(wildcardIndex, Math.max(subLevels.length, topLevels.length))
 

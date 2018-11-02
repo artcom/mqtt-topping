@@ -100,7 +100,7 @@ describe("HTTP Query API", function() {
       const query = this.client.query({ topic: `${this.testTopic}/does-not-exist` })
       return Promise.all([
         expect(query).to.be.rejected,
-        query.catch((error) => {
+        query.catch(error => {
           expect(error).to.deep.equal({
             topic: `${this.testTopic}/does-not-exist`,
             error: 404

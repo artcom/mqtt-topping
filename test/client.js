@@ -208,7 +208,7 @@ describe("MQTT Client", function() {
     it("should unpublish messages", function() {
       const query = this.client.unpublish(`${this.testTopic}/foo`).then(() =>
         this.client.query({ topic: this.testTopic, depth: 1 })
-      ).then((result) =>
+      ).then(result =>
         result.children
       )
 
@@ -224,7 +224,7 @@ describe("MQTT Client", function() {
 
       return Promise.all([
         expect(query).to.be.rejected,
-        query.catch((error) => expect(error).to.deep.equal({ topic: this.testTopic, error: 404 }))
+        query.catch(error => expect(error).to.deep.equal({ topic: this.testTopic, error: 404 }))
       ])
     })
   })

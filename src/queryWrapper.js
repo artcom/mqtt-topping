@@ -18,7 +18,7 @@ export default class QueryWrapper {
   sendJson(query) {
     if (Array.isArray(query)) {
       return this.sendBatch(query.map(makeJsonQuery))
-        .then((results) => results.map(makeObject))
+        .then(results => results.map(makeObject))
     } else {
       return this.sendSingle(makeJsonQuery(query))
         .then(makeObject)
@@ -54,7 +54,7 @@ export default class QueryWrapper {
       }
 
       return data
-    }).catch((error) => {
+    }).catch(error => {
       if (error.response) {
         throw error.response.data
       } else {
@@ -76,7 +76,7 @@ function makeObject(result, isRoot = true) {
   if (result.children) {
     const object = {}
 
-    result.children.forEach((child) => {
+    result.children.forEach(child => {
       const key = child.topic.split("/").pop()
 
       try {
