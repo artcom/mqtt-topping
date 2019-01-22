@@ -1,12 +1,26 @@
-import mqtt from "mqtt"
+import { MqttClient, Packet, connect, IClientOptions, QoS } from "mqtt"
 
-import QueryWrapper from "./queryWrapper"
+import QueryWrapper, { query, result } from "./queryWrapper"
 import { isEventOrCommand, matchTopic, shouldParseJson } from "./helpers"
 
+
+type publishOps = { qos?: QoS, stringifyJson?: boolean }
+type handler = { callback: () => {}, options: any }
+type subscription = { matchTopic: (topic: any) => boolean, handlers: handler[] }
+
 export default class ClientWrapper {
-  constructor(tcpUri, httpUri, options) {
-    this.client = mqtt.connect(tcpUri, options)
-    this.subscriptions = {}
+  client: MqttClient
+  subscriptions: Map<string, subscription>
+  addListener: MqttClient
+  removeListener: MqttClient
+  on: MqttClient
+  once: MqttClient
+  queryWrapper: QueryWrapper
+  isConnected: boolean
+
+  constructor(tcpUri: string, httpUri: string, options: IClientOptions) {
+    this.client = connect(tcpUri, options)
+    this.subscriptions = new Map()
 
     this.client.on("connect", this.handleConnect.bind(this))
     this.client.on("close", this.handleClose.bind(this))
@@ -22,19 +36,19 @@ export default class ClientWrapper {
 
   disconnect() {
     return new Promise(resolve => {
-      this.client.end(resolve)
+      this.client.end(false, resolve)
     })
   }
 
-  query(query) {
+  query(query: query) {
     return this.queryWrapper.send(query)
   }
 
-  queryJson(query) {
+  queryJson(query: query) {
     return this.queryWrapper.sendJson(query)
   }
 
-  publish(topic, payload, { qos = 2, stringifyJson = true } = {}) {
+  publish(topic: string, payload: any, { qos = 2, stringifyJson = true }: publishOps = {}) {
     if (stringifyJson) {
       payload = JSON.stringify(payload)
     }
@@ -45,20 +59,20 @@ export default class ClientWrapper {
     })
   }
 
-  unpublish(topic) {
+  unpublish(topic: string) {
     return new Promise(resolve => {
       this.client.publish(topic, null, { retain: true, qos: 2 }, resolve)
     })
   }
 
-  unpublishRecursively(topic) {
+  unpublishRecursively(topic: string) {
     return this.query({
       topic,
       depth: -1,
       flatten: true,
       parseJson: false
     }).then(subtopics => {
-      const unpublishPromises = subtopics.reduce((promises, subtopic) => {
+      const unpublishPromises = subtopics.reduce((promises: Promise<{}>[], subtopic: result) => {
         if (subtopic.payload) {
           promises.push(this.unpublish(subtopic.topic))
         }
@@ -70,7 +84,7 @@ export default class ClientWrapper {
     })
   }
 
-  subscribe(topic, options, callback) {
+  subscribe(topic: string, options: any, callback: () => {}) {
     if (!callback) {
       callback = options
       options = {}
@@ -79,15 +93,15 @@ export default class ClientWrapper {
     return new Promise(resolve => {
       let subscribe = false
 
-      if (!this.subscriptions[topic]) {
+      if (!this.subscriptions.has(topic)) {
         subscribe = true
-        this.subscriptions[topic] = {
+        this.subscriptions.set(topic, {
           matchTopic: matchTopic(topic),
           handlers: []
-        }
+        })
       }
 
-      this.subscriptions[topic].handlers.push({ callback, options })
+      this.subscriptions.get(topic).handlers.push({ callback, options })
 
       if (subscribe && this.isConnected) {
         this.client.subscribe(topic, { qos: 2 }, resolve)
@@ -97,9 +111,9 @@ export default class ClientWrapper {
     })
   }
 
-  unsubscribe(topic, callback) {
+  unsubscribe(topic: string, callback: () => {}) {
     return new Promise(resolve => {
-      const subscription = this.subscriptions[topic]
+      const subscription = this.subscriptions.get(topic)
 
       if (subscription) {
         subscription.handlers = subscription.handlers.filter(handler =>
@@ -108,7 +122,7 @@ export default class ClientWrapper {
 
         if (subscription.handlers.length === 0) {
           this.client.unsubscribe(topic, resolve)
-          delete this.subscriptions[topic]
+          this.subscriptions.delete(topic)
         } else {
           resolve()
         }
@@ -128,12 +142,12 @@ export default class ClientWrapper {
     this.isConnected = false
   }
 
-  handleMessage(topic, payload, packet) {
+  handleMessage(topic: string, payload: string, packet: Packet) {
     const [success, json] = parsePayload(payload)
     let showError = false
 
     const handlers = flatMap(Object.keys(this.subscriptions), key => {
-      const subscription = this.subscriptions[key]
+      const subscription = this.subscriptions.get(key)
       return subscription.matchTopic(topic) ? subscription.handlers : []
     })
 
@@ -155,7 +169,7 @@ export default class ClientWrapper {
   }
 }
 
-function parsePayload(payload) {
+function parsePayload(payload: string) {
   try {
     return [true, JSON.parse(payload)]
   } catch (error) {
@@ -163,6 +177,6 @@ function parsePayload(payload) {
   }
 }
 
-function flatMap(items, fun) {
+function flatMap(items: string[], fun: (key: string) => {}) {
   return Array.prototype.concat(...items.map(fun))
 }
