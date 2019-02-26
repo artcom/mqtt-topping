@@ -1,4 +1,4 @@
-export function waitFor(condition, timeout = 2000) {
+export function waitFor(condition: () => boolean, timeout = 2000) {
   return new Promise((resolve, reject) => {
     const start = Date.now()
     const interval = setInterval(() => {

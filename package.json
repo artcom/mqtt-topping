@@ -9,7 +9,8 @@
   "scripts": {
     "lint": "eslint src/* test",
     "prepublishOnly": "npm run compile",
-    "test": "mocha --compilers js:@babel/register",
+    "test": "TS_NODE_FILES=true mocha --require ts-node/register 'test/**/*.{ts,tsx}'",
+    "check": "tsc --noEmit",
     "compile": "tsc"
   },
   "repository": {
@@ -21,7 +22,11 @@
     "mqtt": "^2.4.0"
   },
   "devDependencies": {
+    "@types/chai-as-promised": "^7.1.0",
+    "@types/mocha": "^5.2.6",
     "@types/node": "^10.12.18",
+    "@types/sinon": "^7.0.6",
+    "@types/sinon-chai": "^3.2.2",
     "@typescript-eslint/eslint-plugin": "^1.0.0",
     "@typescript-eslint/parser": "^1.0.0",
     "chai": "^3.5.0",
@@ -32,6 +37,7 @@
     "mocha": "^5.2.0",
     "sinon": "^4.0.0",
     "sinon-chai": "^2.14.0",
+    "ts-node": "^8.0.2",
     "typescript": "^3.2.4"
   },
   "license": "MIT"

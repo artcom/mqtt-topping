@@ -4,11 +4,13 @@
       "sourceMap": true,
       "noImplicitAny": true,
       "module": "commonjs",
-      "esModuleInterop"  : false,
-      "target": "es2015",
+      "esModuleInterop"  : true,
+      "target": "es2015"
     },
     "include": [
-      "src/*"
+      "src/*",
+      "test/*",
+      "types/*"
     ],
     "exclude": [
       "node_modules"

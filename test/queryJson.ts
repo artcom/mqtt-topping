@@ -14,7 +14,7 @@ describe("JSON Query API", function() {
     this.client = topping.connect(tcpBrokerUri, httpBrokerUri)
     this.testTopic = `test/topping-${Date.now()}`
 
-    const publish = (topic, payload, options) => () => this.client.publish(topic, payload, options)
+    const publish = (topic, payload, options?) => () => this.client.publish(topic, payload, options)
 
     return waitFor(() => this.client.isConnected)
       .then(publish(`${this.testTopic}/array`, ["a", "b", "c"]))

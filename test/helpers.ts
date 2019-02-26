@@ -3,7 +3,7 @@ import chai, { expect } from "chai"
 import { isEventOrCommand, matchTopic } from "../src/helpers"
 
 chai.use(function({ Assertion }) {
-  Assertion.addMethod("matchTopic", function(topic) {
+  Assertion.addMethod("matchTopic", function(topic: string) {
     this.assert(
       matchTopic(this._obj)(topic), // eslint-disable-line no-underscore-dangle
       `expected #{this} to match ${topic}`,

@@ -3,7 +3,6 @@
   "parser": "@typescript-eslint/parser",
   "plugins": ["@typescript-eslint"],
   "rules": {
-    "import/no-unresolved": 0,
     "import/no-extraneous-dependencies": "off",
     "no-console": "off",
     "no-param-reassign": "off"
@@ -16,5 +15,13 @@
         "no-undef": ["off"]
       }
     }
-  ]
+  ],
+  "settings": {
+    "import/resolver": {
+      "node": {
+        "paths": ["src", "test"],
+        "extensions": [".js", ".jsx", ".ts", ".tsx"]
+      }
+    }
+  }
 }

@@ -17,21 +17,19 @@ const tcpBrokerUri = process.env.TCP_BROKER_URI || "tcp://localhost"
 describe("MQTT Client", function() {
   this.timeout(5000)
 
-  beforeEach(function() {
-    sinon.spy(console, "log")
+  beforeEach(async function() {
+    this.consoleStub = sinon.spy(console, "log")
 
     this.client = topping.connect(tcpBrokerUri, httpBrokerUri)
     this.testTopic = `test/topping-${Date.now()}`
 
-    return waitFor(() => this.client.isConnected).then(() =>
-      this.client.publish(`${this.testTopic}/foo`, "bar")
-    ).then(() =>
-      this.client.publish(`${this.testTopic}/baz`, 23)
-    )
+    await waitFor(() => this.client.isConnected)
+    this.client.publish(`${this.testTopic}/foo`, "bar")
+    return this.client.publish(`${this.testTopic}/baz`, 23)
   })
 
   afterEach(function() {
-    console.log.restore()
+    this.consoleStub.restore()
     return this.client.unpublishRecursively(this.testTopic).then(() => this.client.disconnect())
   })
 
