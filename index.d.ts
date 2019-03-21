@@ -22,6 +22,10 @@ export class ClientWrapper {
   unsubscribe: (topic: string, callback: MessageCallback) => Promise<any>
 }
 
-export default interface MqttTopping{
+export interface MqttToppingStatic {
   connect: (tcpUri: string, httpUri: string, options?: Mqtt.IClientOptions) => ClientWrapper
 }
+
+declare const MqttTopping: MqttToppingStatic
+
+export default MqttTopping
