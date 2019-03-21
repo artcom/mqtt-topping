@@ -1,4 +1,3 @@
-import { Listener } from "events"
 import * as Mqtt from "mqtt"
 
 export type MessageCallback = (json: any, topic: string, packet: Mqtt.Packet) => void
@@ -22,10 +21,10 @@ export class ClientWrapper {
   subscribe: (topic: string, callback: MessageCallback, options?: ISubscribeOptions) => Promise<any>
   unsubscribe: (topic: string, callback: MessageCallback) => Promise<any>
   
-  addListener(type: string | number, listener: Listener): this;
-  removeListener(type: string | number, listener: Listener): this;
-  on(type: string | number, listener: Listener): this;
-  once(type: string | number, listener: Listener): this;
+  addListener(event: string | symbol, listener: (...args: any[]) => void): this;
+  removeListener(event: string | symbol, listener: (...args: any[]) => void): this;
+  on(event: string | symbol, listener: (...args: any[]) => void): this;
+  once(event: string | symbol, listener: (...args: any[]) => void): this;
 }
 
 export interface MqttToppingStatic {
