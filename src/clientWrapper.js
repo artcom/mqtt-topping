@@ -153,6 +153,10 @@ export default class ClientWrapper {
       console.log(`ignoring MQTT message for topic '${topic}': invalid JSON payload '${payload}'`)
     }
   }
+
+  on(event, callback) {
+    this.client.on(event, callback)
+  }
 }
 
 function parsePayload(payload) {

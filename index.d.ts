@@ -20,6 +20,7 @@ export class ClientWrapper {
   unpublishRecursively: (topic: string) => Promise<any>
   subscribe: (topic: string, callback: MessageCallback, options?: ISubscribeOptions) => Promise<any>
   unsubscribe: (topic: string, callback: MessageCallback) => Promise<any>
+  on: (event: string, callback: () => void) => void
 }
 
 export interface MqttToppingStatic {
