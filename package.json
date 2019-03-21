@@ -33,5 +33,6 @@
     "sinon": "^4.0.0",
     "sinon-chai": "^2.14.0"
   },
+  "types": "./index.d.ts",
   "license": "MIT"
 }
