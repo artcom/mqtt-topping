@@ -1,6 +1,6 @@
 import * as Mqtt from "mqtt"
 
-export type MessageCallback = (json: any, topic: string, packet: Mqtt.Packet) => void
+export type MessageCallback = (json: any, topic: string, packet: Mqtt.IPublishPacket) => void
 
 export interface ISubscribeOptions {
   parseJson: boolean
