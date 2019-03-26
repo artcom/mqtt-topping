@@ -4,8 +4,8 @@ export type MessageCallback = (json: any, topic: string, packet: Mqtt.IPublishPa
 
 export interface QueryParams {
   topic: string,
-  depth: number,
-  parseJson: boolean
+  depth?: number,
+  parseJson?: boolean
 }
 
 export interface ISubscribeOptions {
