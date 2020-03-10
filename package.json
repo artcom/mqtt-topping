@@ -17,19 +17,19 @@
     "url": "https://github.com/artcom/mqtt-topping.git"
   },
   "dependencies": {
-    "axios": "^0.18.0",
-    "mqtt": "^2.4.0"
+    "axios": "^0.19.2",
+    "mqtt": "^3.0.0"
   },
   "devDependencies": {
-    "@babel/cli": "^7.1.2",
-    "@babel/core": "^7.1.2",
-    "@babel/preset-env": "^7.1.0",
-    "@babel/register": "^7.0.0",
     "chai": "^3.5.0",
+    "@babel/cli": "^7.8.4",
+    "@babel/core": "^7.8.7",
+    "@babel/preset-env": "^7.8.7",
+    "@babel/register": "^7.8.6",
     "chai-as-promised": "^7.1.1",
-    "eslint": "^5.8.0",
-    "eslint-config-artcom": "^0.9.1",
-    "eslint-plugin-import": "^2.14.0",
+    "eslint": "^6.8.0",
+    "eslint-config-artcom": "^0.10.1",
+    "eslint-plugin-import": "^2.20.1",
     "mocha": "^5.2.0",
     "sinon": "^4.0.0",
     "sinon-chai": "^2.14.0"
