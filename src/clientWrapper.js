@@ -90,7 +90,7 @@ export default class ClientWrapper {
       this.subscriptions[topic].handlers.push({ callback, options })
 
       if (subscribe && this.isConnected) {
-        this.client.subscribe(topic, { qos: 2 }, resolve)
+        this.client.subscribe(topic, { qos: 2, ...options }, resolve)
       } else {
         resolve()
       }
