@@ -62,6 +62,8 @@ export default class MqttClient {
     if (subscription.handlers.length === 0) {
       delete this.subscriptions[topic]
       return this.client.unsubscribe(topic)
+    } else {
+      return Promise.resolve()
     }
   }
 
