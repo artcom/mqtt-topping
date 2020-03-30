@@ -22,11 +22,11 @@ export default class MqttClient {
     this.client.on("message", this.handleMessage.bind(this))
   }
 
-  disconnect(): Promise<void> {
+  disconnect() {
     return this.client.end()
   }
 
-  publish(topic: string, payload: any, options: PublishOptions = {}): Promise<IPublishPacket> {
+  publish(topic: string, payload: any, options: PublishOptions = {}) {
     const { qos = 2, stringifyJson = true } = options
 
     if (stringifyJson) {
@@ -36,7 +36,7 @@ export default class MqttClient {
     return this.client.publish(topic, payload, { retain: !isEventOrCommand(topic), qos })
   }
 
-  unpublish(topic: string): Promise<IPublishPacket> {
+  unpublish(topic: string) {
     return this.client.publish(topic, "", { retain: true, qos: 2 })
   }
 
