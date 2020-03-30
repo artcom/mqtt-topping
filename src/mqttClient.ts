@@ -1,4 +1,4 @@
-import { AsyncClient, IPublishPacket, Packet } from "async-mqtt"
+import { AsyncClient, Packet } from "async-mqtt"
 import { isEventOrCommand, matchTopic } from "./helpers"
 import {
   MessageCallback,
