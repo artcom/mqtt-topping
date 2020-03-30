@@ -8,11 +8,12 @@ const tcpBrokerUri = process.env.TCP_BROKER_URI || "tcp://localhost"
 describe("MQTT Client", () => {
   let client
   let testTopic
+  let onParseError
 
   beforeEach(async () => {
-    console.log = jest.fn()
+    onParseError = jest.fn()
 
-    client = await topping.connect(tcpBrokerUri, httpBrokerUri)
+    client = await topping.connect(tcpBrokerUri, httpBrokerUri, { onParseError })
     testTopic = `test/topping-${Date.now()}`
 
     await client.publish(`${testTopic}/foo`, "bar")
@@ -124,7 +125,8 @@ describe("MQTT Client", () => {
 
       expect(handler.mock.calls[0][0]).toBe(42)
       expect(handler.mock.calls[0][1]).toBe(eventTopic)
-      expect(console.log.mock.calls[0][0]).toBe(`Ignoring MQTT message for topic '${eventTopic}': invalid JSON payload 'this is invalid JSON'`)
+      expect(onParseError.mock.calls[0][0]).toEqual(Buffer.from("this is invalid JSON"))
+      expect(onParseError.mock.calls[0][1]).toBe(eventTopic)
     })
 
     test("should receive raw payload when JSON parsing is disabled", async () => {

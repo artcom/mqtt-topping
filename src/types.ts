@@ -1,4 +1,10 @@
-import { Packet, QoS } from "async-mqtt"
+import { Packet, QoS, IClientOptions } from "async-mqtt"
+
+export type ErrorCallback = (payload: Buffer, topic: string) => void
+
+export interface ClientOptions extends IClientOptions {
+    onParseError?: ErrorCallback;
+}
 
 export type Query = {
     topic: string;

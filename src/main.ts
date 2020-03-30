@@ -1,19 +1,19 @@
-import { IClientOptions, connectAsync, IPublishPacket } from "async-mqtt"
+import { connectAsync, IPublishPacket } from "async-mqtt"
 
 import HttpClient from "./httpClient"
 import MqttClient from "./mqttClient"
-import { FlatTopicResult } from "./types"
+import { ClientOptions, FlatTopicResult } from "./types"
 
-export async function connect(mqttUri: string, httpUri?: string, options?: IClientOptions) {
+export async function connect(mqttUri: string, httpUri?: string, options?: ClientOptions) {
   const mqttApi = await createMqttApi(mqttUri, options)
   const httpApi = httpUri ? createHttpApi(httpUri, mqttApi.unpublish) : {}
 
   return { ...mqttApi, ...httpApi }
 }
 
-async function createMqttApi(uri: string, options?: IClientOptions) {
+async function createMqttApi(uri: string, options?: ClientOptions) {
   const client = await connectAsync(uri, options, false)
-  const mqttClient = new MqttClient(client)
+  const mqttClient = new MqttClient(client, options?.onParseError)
 
   return {
     publish: mqttClient.publish.bind(mqttClient),

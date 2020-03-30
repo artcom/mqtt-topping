@@ -5,15 +5,18 @@ import {
   SubscribeOptions,
   Subscriptions,
   PublishOptions,
-  SubscriptionHandler
+  SubscriptionHandler,
+  ErrorCallback
 } from "./types"
 
 export default class MqttClient {
   client: AsyncClient
+  onParseError?: ErrorCallback
   subscriptions: Subscriptions
 
-  constructor(client: AsyncClient) {
+  constructor(client: AsyncClient, onParseError?: ErrorCallback) {
     this.client = client
+    this.onParseError = onParseError
 
     this.subscriptions = {}
     this.client.on("message", this.handleMessage.bind(this))
@@ -64,7 +67,7 @@ export default class MqttClient {
 
   handleMessage(topic: string, payload: Buffer, packet: Packet) {
     const [success, json] = parsePayload(payload)
-    let showError = false
+    let logParseError = false
 
     const matchingHandlers = Object.keys(this.subscriptions)
       .reduce<SubscriptionHandler[]>((handlers, key) => {
@@ -77,15 +80,15 @@ export default class MqttClient {
         if (success) {
           callback(json, topic, packet)
         } else {
-          showError = true
+          logParseError = true
         }
       } else {
         callback(payload.toString(), topic, packet)
       }
     })
 
-    if (showError) {
-      console.log(`Ignoring MQTT message for topic '${topic}': invalid JSON payload '${payload}'`)
+    if (logParseError && this.onParseError) {
+      this.onParseError(payload, topic)
     }
   }
 }
