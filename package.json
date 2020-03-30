@@ -1,39 +1,43 @@
 {
-  "name": "mqtt-topping",
+  "name": "@artcom/mqtt-topping",
   "version": "0.8.13",
   "description": "Syntactical sugar on top of the MQTT client cake",
   "files": [
-    "dist/",
-    "index.d.ts"
+    "dist/"
   ],
-  "main": "dist/topping.js",
+  "main": "dist/main.js",
   "scripts": {
-    "lint": "eslint src test",
-    "prepublishOnly": "babel src --out-dir dist --source-maps",
-    "test": "mocha --compilers js:@babel/register"
+    "lint": "eslint --ext .ts src --fix",
+    "compile": "tsc",
+    "compile:watch": "tsc -w",
+    "test": "jest --runInBand",
+    "test:debug": "node --inspect-brk node_modules/.bin/jest --runInBand"
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/artcom/mqtt-topping.git"
   },
   "dependencies": {
+    "async-mqtt": "^2.5.0",
     "axios": "^0.19.2",
-    "mqtt": "^3.0.0"
+    "eslint-plugin-jest": "^23.8.2"
   },
   "devDependencies": {
-    "chai": "^3.5.0",
-    "@babel/cli": "^7.8.4",
-    "@babel/core": "^7.8.7",
-    "@babel/preset-env": "^7.8.7",
-    "@babel/register": "^7.8.6",
-    "chai-as-promised": "^7.1.1",
+    "@types/node": "^13.9.5",
+    "@typescript-eslint/eslint-plugin": "^2.25.0",
+    "@typescript-eslint/parser": "^2.25.0",
     "eslint": "^6.8.0",
     "eslint-config-artcom": "^0.10.1",
-    "eslint-plugin-import": "^2.20.1",
-    "mocha": "^5.2.0",
-    "sinon": "^4.0.0",
-    "sinon-chai": "^2.14.0"
+    "eslint-plugin-import": "^2.20.2",
+    "jest": "^25.2.4",
+    "typescript": "^3.8.3"
   },
   "types": "./index.d.ts",
-  "license": "MIT"
+  "license": "MIT",
+  "keywords": [
+    "mqtt",
+    "json",
+    "http",
+    "async"
+  ]
 }

@@ -1,3 +1,14 @@
 {
-  "extends": "artcom/mocha"
+  "plugins": ["jest"],
+  "env": {
+    "jest/globals": true
+  },
+  "extends": [
+    "eslint:recommended",
+    "plugin:jest/recommended"
+  ],
+  "rules": {
+    "@typescript-eslint/no-var-requires": "off",
+    "import/no-commonjs": "off"
+  }
 }
