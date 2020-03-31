@@ -1,4 +1,4 @@
-const topping = require("../dist/main")
+const topping = require("../lib/main")
 
 const httpBrokerUri = process.env.HTTP_BROKER_URI || "http://localhost:8080"
 const tcpBrokerUri = process.env.TCP_BROKER_URI || "tcp://localhost"

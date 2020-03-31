@@ -1,4 +1,4 @@
-const { isEventOrCommand, matchTopic } = require("../dist/helpers")
+const { isEventOrCommand, matchTopic } = require("../lib/helpers")
 
 describe("Helpers", () => {
   describe("isEventOrCommand", () => {

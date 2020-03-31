@@ -1,5 +1,5 @@
 const { delay } = require("./util")
-const topping = require("../dist/main")
+const topping = require("../lib/main")
 
 const httpBrokerUri = process.env.HTTP_BROKER_URI || "http://localhost:8080/query"
 const tcpBrokerUri = process.env.TCP_BROKER_URI || "tcp://localhost"
