@@ -22,7 +22,9 @@ export type TopicResult = {
 export type FlatTopicResult = {
     topic: string;
     payload?: any;
-}[]
+}
+
+export type QueryResult = TopicResult | FlatTopicResult[]
 
 export type JsonResult = {[key: string]: any}
 

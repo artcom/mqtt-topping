@@ -40,7 +40,7 @@ function createHttpApi(uri: string, unpublish: (topic: string) => any) {
     unpublishRecursively:
       (topic: string) => httpClient.query({ topic, depth: -1, flatten: true, parseJson: false })
         .then(result => {
-          const subTopics = result as FlatTopicResult
+          const subTopics = result as FlatTopicResult[]
           const unpublishPromises = subTopics.reduce<Promise<IPublishPacket>[]>(
             (promises, subTopic) =>
               subTopic.payload ? [...promises, unpublish(subTopic.topic)] : promises,
