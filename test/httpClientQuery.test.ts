@@ -1,34 +1,37 @@
-const { delay } = require("./util")
-const topping = require("../lib/main")
+import { delay } from "./util"
+import { connect, HttpClient, MqttClient, unpublishRecursively } from "../src/main"
 
-const httpBrokerUri = process.env.HTTP_BROKER_URI || "http://localhost:8080/query"
 const tcpBrokerUri = process.env.TCP_BROKER_URI || "tcp://localhost"
+const httpBrokerUri = process.env.HTTP_BROKER_URI || "http://localhost:8080/query"
 
 describe("HTTP Query API", () => {
-  let client
+  let mqttClient: MqttClient
+  let httpClient: HttpClient
   let testTopic
 
   beforeEach(async () => {
-    client = await topping.connect(tcpBrokerUri, httpBrokerUri)
+    mqttClient = await connect(tcpBrokerUri)
+    httpClient = new HttpClient(httpBrokerUri)
+
     testTopic = `test/topping-${Date.now()}`
 
-    await client.publish(`${testTopic}/foo`, "bar")
-    await client.publish(`${testTopic}/baz`, 23)
-    await client.publish(`${testTopic}/more/one`, 1)
-    await client.publish(`${testTopic}/more/two`, 2)
+    await mqttClient.publish(`${testTopic}/foo`, "bar")
+    await mqttClient.publish(`${testTopic}/baz`, 23)
+    await mqttClient.publish(`${testTopic}/more/one`, 1)
+    await mqttClient.publish(`${testTopic}/more/two`, 2)
 
     // ensure that the publishes are processed on the server before testing
     await delay(100)
   })
 
   afterEach(async () => {
-    await client.unpublishRecursively(testTopic)
-    client.disconnect()
+    await unpublishRecursively(mqttClient, httpClient, testTopic)
+    mqttClient.disconnect()
   })
 
   describe("Single Queries", () => {
     test("should query single topics", async () => {
-      const response = await client.query({ topic: `${testTopic}/foo` })
+      const response = await httpClient.query({ topic: `${testTopic}/foo` })
 
       expect(response).toEqual({
         topic: `${testTopic}/foo`,
@@ -37,7 +40,7 @@ describe("HTTP Query API", () => {
     })
 
     test("should query wildcard topics", async () => {
-      const response = await client.query({ topic: `${testTopic}/+` })
+      const response = await httpClient.query({ topic: `${testTopic}/+` })
 
       expect(response).toEqual([
         { topic: `${testTopic}/baz`, payload: 23 },
@@ -47,7 +50,7 @@ describe("HTTP Query API", () => {
     })
 
     test("should query subtopics", async () => {
-      const response = await client.query({ topic: `${testTopic}/more`, depth: 1 })
+      const response = await httpClient.query({ topic: `${testTopic}/more`, depth: 1 })
 
       expect(response).toEqual({
         topic: `${testTopic}/more`,
@@ -59,7 +62,7 @@ describe("HTTP Query API", () => {
     })
 
     test("should query subtopics with grandchildren", async () => {
-      const response = await client.query({ topic: testTopic, depth: 2 })
+      const response = await httpClient.query({ topic: testTopic, depth: 2 })
 
       expect(response).toEqual({
         topic: testTopic,
@@ -84,7 +87,7 @@ describe("HTTP Query API", () => {
     })
 
     test("should flatten query results", async () => {
-      const response = await client.query({ topic: testTopic, depth: 2, flatten: true })
+      const response = await httpClient.query({ topic: testTopic, depth: 2, flatten: true })
       return expect(response).toEqual([
         { topic: testTopic },
         { topic: `${testTopic}/baz`, payload: 23 },
@@ -97,7 +100,7 @@ describe("HTTP Query API", () => {
 
     test("should fail when querying an inexistent topic", async () => {
       expect.assertions(1)
-      await client.query({ topic: `${testTopic}/does-not-exist` })
+      await httpClient.query({ topic: `${testTopic}/does-not-exist` })
         .catch(error => {
           expect(error).toEqual({
             topic: `${testTopic}/does-not-exist`,
@@ -109,7 +112,7 @@ describe("HTTP Query API", () => {
 
   describe("Batch Queries", () => {
     test("should query multiple topics", async () => {
-      const response = await client.queryBatch([
+      const response = await httpClient.queryBatch([
         { topic: `${testTopic}/foo` },
         { topic: `${testTopic}/baz` }
       ])
@@ -121,7 +124,7 @@ describe("HTTP Query API", () => {
     })
 
     test("should include errors in the results", async () => {
-      const response = await client.queryBatch([
+      const response = await httpClient.queryBatch([
         { topic: `${testTopic}/foo` },
         { topic: `${testTopic}/does-not-exist` }
       ])
@@ -135,19 +138,19 @@ describe("HTTP Query API", () => {
 
   describe("JSON Parsing", () => {
     beforeEach(async () => {
-      await client.client.publish(`${testTopic}/invalid`, "this is invalid JSON", { retain: true })
+      await mqttClient.publish(`${testTopic}/invalid`, "this is invalid JSON", { stringifyJson: false })
     })
 
     test("should fail on invalid payloads", async () => {
       expect.assertions(1)
 
-      await client.query({ topic: `${testTopic}/invalid` }).catch(error =>
+      await httpClient.query({ topic: `${testTopic}/invalid` }).catch(error =>
         expect(error).toEqual("Unexpected token h in JSON at position 1")
       )
     })
 
     test("should represent errors in batch queries", async () => {
-      const response = await client.queryBatch([
+      const response = await httpClient.queryBatch([
         { topic: `${testTopic}/foo` },
         { topic: `${testTopic}/invalid` }
       ])
@@ -159,7 +162,7 @@ describe("HTTP Query API", () => {
     })
 
     test("can be disabled in single queries", async () => {
-      const response = await client.query({ topic: `${testTopic}/invalid`, parseJson: false })
+      const response = await httpClient.query({ topic: `${testTopic}/invalid`, parseJson: false })
       expect(response).toEqual({
         topic: `${testTopic}/invalid`,
         payload: "this is invalid JSON"
@@ -167,7 +170,7 @@ describe("HTTP Query API", () => {
     })
 
     test("can be disabled in batch queries", async () => {
-      const response = await client.queryBatch([
+      const response = await httpClient.queryBatch([
         { topic: `${testTopic}/foo` },
         { topic: `${testTopic}/invalid`, parseJson: false }
       ])

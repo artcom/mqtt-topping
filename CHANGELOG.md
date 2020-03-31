@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.0.0] - 2020-03-30
+
+### Changed
+- removed babel in favor of tslint
+
+### Added
+- onParseError callback option
+
 ## [0.7.0] - 2017-02-22
 
 ### Changed

@@ -11,14 +11,19 @@ import {
 
 export default class MqttClient {
   client: AsyncClient
-  onParseError?: ErrorCallback
-  subscriptions: Subscriptions
+  on: AsyncClient["on"]
+  once: AsyncClient["once"]
+
+  private onParseError?: ErrorCallback
+  private subscriptions: Subscriptions
 
   constructor(client: AsyncClient, onParseError?: ErrorCallback) {
     this.client = client
     this.onParseError = onParseError
 
     this.subscriptions = {}
+    this.on = this.client.on.bind(this.client)
+    this.once = this.client.once.bind(this.client)
     this.client.on("message", this.handleMessage.bind(this))
   }
 

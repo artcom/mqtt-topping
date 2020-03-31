@@ -9,7 +9,7 @@ export interface ClientOptions extends IClientOptions {
 export type Query = {
     topic: string;
     depth?: number;
-    flatten: boolean;
+    flatten?: boolean;
     parseJson?: boolean;
 }
 

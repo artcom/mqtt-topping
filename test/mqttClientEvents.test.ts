@@ -1,14 +1,12 @@
-const topping = require("../lib/main")
+import { connect, MqttClient } from "../src/main"
 
-const httpBrokerUri = process.env.HTTP_BROKER_URI || "http://localhost:8080"
 const tcpBrokerUri = process.env.TCP_BROKER_URI || "tcp://localhost"
 
-
-describe("Events", () => {
-  let client
+describe("MQTT Client Events", () => {
+  let client: MqttClient
 
   beforeEach(async () => {
-    client = await topping.connect(tcpBrokerUri, httpBrokerUri)
+    client = await connect(tcpBrokerUri)
   })
 
   test("should publish close event", async () => {

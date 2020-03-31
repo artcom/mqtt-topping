@@ -1,31 +1,33 @@
-const { delayUntil, delay } = require("./util")
-const topping = require("../lib/main")
+import { delayUntil, delay } from "./util"
+import { connect, HttpClient, MqttClient, unpublishRecursively } from "../src/main"
 
-const httpBrokerUri = process.env.HTTP_BROKER_URI || "http://localhost:8080/query"
 const tcpBrokerUri = process.env.TCP_BROKER_URI || "tcp://localhost"
-
+const httpBrokerUri = process.env.HTTP_BROKER_URI || "http://localhost:8080/query"
 
 describe("MQTT Client", () => {
-  let client
-  let testTopic
-  let onParseError
+  let mqttClient: MqttClient
+  let httpClient: HttpClient
+  let testTopic: string
+  let onParseError: jest.Mock<void, [Buffer, string]>
 
   beforeEach(async () => {
     onParseError = jest.fn()
 
-    client = await topping.connect(tcpBrokerUri, httpBrokerUri, { onParseError })
+    mqttClient = await connect(tcpBrokerUri, { onParseError })
+    httpClient = new HttpClient(httpBrokerUri)
+
     testTopic = `test/topping-${Date.now()}`
 
-    await client.publish(`${testTopic}/foo`, "bar")
-    await client.publish(`${testTopic}/baz`, 23)
+    await mqttClient.publish(`${testTopic}/foo`, "bar")
+    await mqttClient.publish(`${testTopic}/baz`, 23)
 
     // ensure that the publishes are processed on the server before testing
     await delay(100)
   })
 
   afterEach(async () => {
-    await client.unpublishRecursively(testTopic)
-    client.disconnect()
+    await unpublishRecursively(mqttClient, httpClient, testTopic)
+    mqttClient.disconnect()
   })
 
   describe("subscribe", () => {
@@ -33,8 +35,8 @@ describe("MQTT Client", () => {
       const handler1 = jest.fn()
       const handler2 = jest.fn()
 
-      await client.subscribe(`${testTopic}/foo`, handler1)
-      await client.subscribe(`${testTopic}/baz`, handler2)
+      await mqttClient.subscribe(`${testTopic}/foo`, handler1)
+      await mqttClient.subscribe(`${testTopic}/baz`, handler2)
 
       await delayUntil(() =>
         handler1.mock.calls.length === 1 &&
@@ -51,8 +53,8 @@ describe("MQTT Client", () => {
       const handler = jest.fn()
       const eventTopic = `${testTopic}/onEvent`
 
-      await client.subscribe(eventTopic, handler)
-      await client.publish(eventTopic, "hello")
+      await mqttClient.subscribe(eventTopic, handler)
+      await mqttClient.publish(eventTopic, "hello")
 
       await delayUntil(() => handler.mock.calls.length === 1)
 
@@ -63,8 +65,8 @@ describe("MQTT Client", () => {
     test("should receive messages with empty payload", async () => {
       const handler = jest.fn()
 
-      await client.subscribe(`${testTopic}/foo`, handler)
-      await client.unpublish(`${testTopic}/foo`)
+      await mqttClient.subscribe(`${testTopic}/foo`, handler)
+      await mqttClient.unpublish(`${testTopic}/foo`)
 
       await delayUntil(() => handler.mock.calls.length === 2)
 
@@ -76,7 +78,7 @@ describe("MQTT Client", () => {
 
     test("should retrieve retained messages using hash wildcard", async () => {
       const handler = jest.fn()
-      await client.subscribe(`${testTopic}/#`, handler)
+      await mqttClient.subscribe(`${testTopic}/#`, handler)
 
       await delayUntil(() => handler.mock.calls.length === 2)
 
@@ -95,7 +97,7 @@ describe("MQTT Client", () => {
 
     test("should retrieve retained messages using plus wildcard", async () => {
       const handler = jest.fn()
-      await client.subscribe(`${testTopic}/+`, handler)
+      await mqttClient.subscribe(`${testTopic}/+`, handler)
 
       await delayUntil(() => handler.mock.calls.length === 2)
 
@@ -116,10 +118,10 @@ describe("MQTT Client", () => {
       const handler = jest.fn()
       const eventTopic = `${testTopic}/onEvent`
 
-      await client.subscribe(eventTopic, handler)
+      await mqttClient.subscribe(eventTopic, handler)
 
-      await client.client.publish(eventTopic, "this is invalid JSON")
-      await client.client.publish(eventTopic, "42")
+      await mqttClient.client.publish(eventTopic, "this is invalid JSON")
+      await mqttClient.client.publish(eventTopic, "42")
 
       await delayUntil(() => handler.mock.calls.length === 1)
 
@@ -133,10 +135,10 @@ describe("MQTT Client", () => {
       const handler = jest.fn()
       const eventTopic = `${testTopic}/onEvent`
 
-      await client.subscribe(eventTopic, handler, { parseJson: false })
+      await mqttClient.subscribe(eventTopic, handler, { parseJson: false })
 
-      await client.client.publish(eventTopic, "this is invalid JSON")
-      await client.client.publish(eventTopic, "42")
+      await mqttClient.client.publish(eventTopic, "this is invalid JSON")
+      await mqttClient.client.publish(eventTopic, "42")
 
       await delayUntil(() => handler.mock.calls.length === 2)
 
@@ -150,19 +152,19 @@ describe("MQTT Client", () => {
       const handler = jest.fn()
       const eventTopic = `${testTopic}/onEvent`
 
-      await client.subscribe(eventTopic, handler)
+      await mqttClient.subscribe(eventTopic, handler)
 
-      await client.publish(eventTopic, "hello")
+      await mqttClient.publish(eventTopic, "hello")
 
       await delayUntil(() => handler.mock.calls.length === 1)
 
-      await client.unsubscribe(eventTopic, handler)
+      await mqttClient.unsubscribe(eventTopic, handler)
 
-      await client.publish(eventTopic, "goodbye")
+      await mqttClient.publish(eventTopic, "goodbye")
 
-      await client.subscribe(eventTopic, handler)
+      await mqttClient.subscribe(eventTopic, handler)
 
-      await client.publish(eventTopic, "hello again")
+      await mqttClient.publish(eventTopic, "hello again")
 
       await delayUntil(() => handler.mock.calls.length === 2)
 
@@ -178,9 +180,9 @@ describe("MQTT Client", () => {
       const handler = jest.fn()
       const eventTopic = `${testTopic}/onEvent`
 
-      await client.subscribe(eventTopic, handler)
+      await mqttClient.subscribe(eventTopic, handler)
 
-      await client.publish(eventTopic, "hello")
+      await mqttClient.publish(eventTopic, "hello")
 
       await delayUntil(() => handler.mock.calls.length === 1)
 
@@ -193,9 +195,9 @@ describe("MQTT Client", () => {
       const handler = jest.fn()
       const eventTopic = `${testTopic}/onEvent`
 
-      await client.subscribe(eventTopic, handler)
+      await mqttClient.subscribe(eventTopic, handler)
 
-      await client.publish(eventTopic, "hello", { qos: 0 })
+      await mqttClient.publish(eventTopic, "hello", { qos: 0 })
 
       await delayUntil(() => handler.mock.calls.length === 1)
 
@@ -207,16 +209,16 @@ describe("MQTT Client", () => {
     test("should publish messages without stringifying", async () => {
       const topic = `${testTopic}/raw`
 
-      await client.publish(topic, "invalid\nJSON", { stringifyJson: false })
+      await mqttClient.publish(topic, "invalid\nJSON", { stringifyJson: false })
 
-      const response = await client.query({ topic, parseJson: false })
+      const response = await httpClient.query({ topic, parseJson: false })
       expect(response).toEqual({ topic, payload: "invalid\nJSON" })
     })
 
     test("should unpublish messages", async () => {
-      await client.unpublish(`${testTopic}/foo`)
+      await mqttClient.unpublish(`${testTopic}/foo`)
 
-      const response = await client.query({ topic: testTopic, depth: 1 })
+      const response = await httpClient.query({ topic: testTopic, depth: 1 })
       expect(response).toEqual({
         topic: testTopic,
         children: [{ topic: `${testTopic}/baz`, payload: 23 }]
@@ -226,9 +228,9 @@ describe("MQTT Client", () => {
     test("should unpublish messages recursively", async () => {
       expect.assertions(1)
 
-      await client.unpublishRecursively(`${testTopic}`)
+      await unpublishRecursively(mqttClient, httpClient, testTopic)
 
-      await client.query({ topic: testTopic }).catch(error => {
+      await httpClient.query({ topic: testTopic }).catch(error => {
         expect(error).toEqual({ topic: testTopic, error: 404 })
       })
     })
