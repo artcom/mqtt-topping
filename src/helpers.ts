@@ -1,6 +1,6 @@
 import { TopicMatcher } from "./types"
 
-function isUpperCase(str: string) {
+function isUpperCase(str: string): boolean {
   return str.toUpperCase() === str
 }
 
