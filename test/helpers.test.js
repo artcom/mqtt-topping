@@ -1,4 +1,4 @@
-import { isEventOrCommand, matchTopic } from "../src/helpers"
+const { isEventOrCommand, matchTopic } = require("../lib/helpers")
 
 describe("Helpers", () => {
   describe("isEventOrCommand", () => {

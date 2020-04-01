@@ -1,6 +1,5 @@
 {
   "plugins": ["jest"],
-  "parser": "@typescript-eslint/parser",
   "env": {
     "jest/globals": true
   },

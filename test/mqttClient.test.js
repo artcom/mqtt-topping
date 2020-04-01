@@ -1,14 +1,14 @@
-import { delayUntil, delay } from "./util"
-import { connect, HttpClient, MqttClient, unpublishRecursively } from "../src/main"
+const { delayUntil, delay } = require("./util")
+const { connect, HttpClient, unpublishRecursively } = require("../lib/main")
 
 const tcpBrokerUri = process.env.TCP_BROKER_URI || "tcp://localhost"
 const httpBrokerUri = process.env.HTTP_BROKER_URI || "http://localhost:8080/query"
 
 describe("MQTT Client", () => {
-  let mqttClient: MqttClient
-  let httpClient: HttpClient
-  let testTopic: string
-  let onParseError: jest.Mock<void, [Buffer, string]>
+  let mqttClient
+  let httpClient
+  let testTopic
+  let onParseError
 
   beforeEach(async () => {
     onParseError = jest.fn()

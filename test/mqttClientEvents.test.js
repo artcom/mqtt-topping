@@ -1,9 +1,9 @@
-import { connect, MqttClient } from "../src/main"
+const { connect } = require("../lib/main")
 
 const tcpBrokerUri = process.env.TCP_BROKER_URI || "tcp://localhost"
 
 describe("MQTT Client Events", () => {
-  let client: MqttClient
+  let client
 
   beforeEach(async () => {
     client = await connect(tcpBrokerUri)

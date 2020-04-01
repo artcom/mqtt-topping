@@ -1,12 +1,12 @@
-import { delay } from "./util"
-import { connect, HttpClient, MqttClient, unpublishRecursively } from "../src/main"
+const { delay } = require("./util")
+const { connect, HttpClient, unpublishRecursively } = require("../lib/main")
 
 const tcpBrokerUri = process.env.TCP_BROKER_URI || "tcp://localhost"
 const httpBrokerUri = process.env.HTTP_BROKER_URI || "http://localhost:8080/query"
 
 describe("HTTP Query JSON API", () => {
-  let mqttClient: MqttClient
-  let httpClient: HttpClient
+  let mqttClient
+  let httpClient
   let testTopic
 
   beforeEach(async () => {
