@@ -1,6 +1,14 @@
 import axios, { AxiosResponse } from "axios"
 
-import { ErrorResult, QueryResult, JsonResult, Query, FlatTopicResult, TopicResult } from "./types"
+import {
+  Query,
+  TopicResult,
+  FlatTopicResult,
+  QueryResult,
+  ErrorResult,
+  BatchQueryResult,
+  JsonResult
+} from "./types"
 
 export default class HttpClient {
   uri: string
@@ -27,8 +35,8 @@ export default class HttpClient {
       })
   }
 
-  queryBatch(queries: Query[]): Promise<QueryResult[]> {
-    return axios.post<any, AxiosResponse<QueryResult[]>>(this.uri, queries.map(omitParseJson))
+  queryBatch(queries: Query[]): Promise<BatchQueryResult> {
+    return axios.post<any, AxiosResponse<BatchQueryResult>>(this.uri, queries.map(omitParseJson))
       .then(({ data }) =>
         data.map((result: QueryResult, index: number) => {
           const { topic, parseJson = true } = queries[index]

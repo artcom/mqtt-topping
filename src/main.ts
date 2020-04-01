@@ -1,25 +1,13 @@
-import { connectAsync, IPublishPacket } from "async-mqtt"
+import { connectAsync } from "async-mqtt"
 
-import HttpClient from "./httpClient"
-import MqttClient from "./mqttClient"
-import { ClientOptions, FlatTopicResult } from "./types"
+import MqttClient from "./mqtt/mqttClient"
+import { ClientOptions } from "./mqtt/types"
 
-export { default as HttpClient } from "./httpClient"
+export { default as HttpClient } from "./http/httpClient"
+export { unpublishRecursively } from "./utils"
 
 export async function connectMqttClient(uri: string, options?: ClientOptions) {
   const client = await connectAsync(uri, options, false)
   return new MqttClient(client, options?.onParseError)
 }
 
-export async function unpublishRecursively(
-  mqttClient: MqttClient, httpClient: HttpClient, topic: string
-) {
-  const result = await httpClient.query({ topic, depth: -1, flatten: true, parseJson: false })
-  const subTopics = result as FlatTopicResult[]
-  const unpublishPromises = subTopics.reduce<Promise<IPublishPacket>[]>(
-    (promises, subTopic) =>
-      subTopic.payload ? [...promises, mqttClient.unpublish(subTopic.topic)] : promises,
-    [])
-
-  return Promise.all(unpublishPromises)
-}

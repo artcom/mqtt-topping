@@ -1,4 +1,4 @@
-const { isEventOrCommand, matchTopic } = require("../lib/helpers")
+const { isEventOrCommand, matchTopic } = require("../lib/mqtt/helpers")
 
 describe("Helpers", () => {
   describe("isEventOrCommand", () => {
