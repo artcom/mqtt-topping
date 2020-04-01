@@ -1,6 +1,6 @@
 import axios, { AxiosResponse } from "axios"
 
-import { QueryResult, JsonResult, Query, FlatTopicResult, TopicResult } from "./types"
+import { ErrorResult, QueryResult, JsonResult, Query, FlatTopicResult, TopicResult } from "./types"
 
 export default class HttpClient {
   uri: string
@@ -9,7 +9,7 @@ export default class HttpClient {
     this.uri = uri
   }
 
-  query(query: Query) {
+  query(query: Query): Promise<QueryResult> {
     return axios.post<any, AxiosResponse<QueryResult>>(this.uri, omitParseJson(query))
       .then(({ data }) => {
         const { parseJson = true } = query
@@ -27,7 +27,7 @@ export default class HttpClient {
       })
   }
 
-  queryBatch(queries: Query[]) {
+  queryBatch(queries: Query[]): Promise<QueryResult[]> {
     return axios.post<any, AxiosResponse<QueryResult[]>>(this.uri, queries.map(omitParseJson))
       .then(({ data }) =>
         data.map((result: QueryResult, index: number) => {
@@ -49,61 +49,63 @@ export default class HttpClient {
       )
   }
 
-  async queryJson(query: Query) {
-    const jsonQuery = makeJsonQuery(query)
+  async queryJson(topic: string): Promise<JsonResult> {
+    const jsonQuery = makeJsonQuery(topic)
 
-    try {
-      const result = await this.query(jsonQuery)
-      return makeObject(result as TopicResult)
-    } catch (error) {
-      return {}
-    }
+    const result = await this.query(jsonQuery)
+    return makeObject(result as TopicResult)
   }
 
-  async queryJsonBatch(queries: Query[]) {
-    const jsonQueries = queries.map(makeJsonQuery)
+  async queryJsonBatch(topics: string[]): Promise<JsonResult> {
+    const jsonQueries = topics.map(makeJsonQuery)
 
-    const results = await this.queryBatch(jsonQueries)
-    return results.map(result => makeObject(result as TopicResult))
+    const results = (await this.queryBatch(jsonQueries)) as Array<TopicResult | ErrorResult>
+    return results.map(result => {
+      if ("error" in result) {
+        return result
+      }
+
+      try {
+        return makeObject(result)
+      } catch (error) {
+        return {
+          topic: result.topic,
+          error
+        }
+      }
+    })
   }
 }
 
-function makeJsonQuery(query: Query) {
-  if (query.topic.includes("+")) {
+function makeJsonQuery(topic: string): Query {
+  if (topic.includes("+")) {
     throw new Error("Wildcards are not supported in queryJson().")
   }
 
-  return { ...query, depth: -1, parseJson: false }
+  return { topic, depth: -1, parseJson: false, flatten: false }
 }
 
-function makeObject(result: TopicResult, isRoot = true): JsonResult {
-  if (result.children) {
+function makeObject(result: TopicResult): JsonResult {
+  if ("children" in result && result.children) {
     const object: JsonResult = {}
 
     result.children.forEach(child => {
       const key = child.topic.split("/").pop() as string
-
-      try {
-        object[key] = makeObject(child, false)
-      } catch (e) {
-        // ignore children that contain invalid JSON
-      }
+      object[key] = makeObject(child)
     })
 
     return object
-  } else if (!isRoot) {
-    return JSON.parse(result.payload)
-  } else {
-    return {}
   }
+
+  return JSON.parse(result.payload)
 }
 
-function omitParseJson(query: Query) {
+function omitParseJson(query: Query): Query {
   const { parseJson, ...rest } = query
   return rest
 }
 
-function parsePayloads(result: QueryResult) {
+function parsePayloads(result: QueryResult): void {
   if (Array.isArray(result)) {
     result.forEach(parsePayloads)
   } else {

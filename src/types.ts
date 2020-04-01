@@ -19,14 +19,19 @@ export type TopicResult = {
     children?: Array<TopicResult>;
 }
 
+export type ErrorResult = {
+    topic: string;
+    error: any;
+}
+
 export type FlatTopicResult = {
     topic: string;
     payload?: any;
 }
 
-export type QueryResult = TopicResult | FlatTopicResult[]
+export type QueryResult = TopicResult | ErrorResult | FlatTopicResult[]
 
-export type JsonResult = {[key: string]: any}
+export type JsonResult = any
 
 export type MessageCallback = (payload: any, topic: string, packet: Packet) => void
 
@@ -41,5 +46,5 @@ export type Subscription = {
 
 export type Subscriptions = { [topic: string]: Subscription }
 
-export type PublishOptions = { qos?: QoS; stringifyJson?: boolean }
+export type PublishOptions = { qos?: QoS; stringifyJson?: boolean; retain?: boolean }
 export type SubscribeOptions = { qos?: QoS; parseJson?: boolean }

@@ -1,4 +1,4 @@
-import { AsyncClient, Packet } from "async-mqtt"
+import { AsyncClient, Packet, IPublishPacket } from "async-mqtt"
 import { isEventOrCommand, matchTopic } from "./helpers"
 import {
   MessageCallback,
@@ -31,18 +31,20 @@ export default class MqttClient {
     return this.client.end()
   }
 
-  publish(topic: string, payload: any, options: PublishOptions = {}) {
-    const { qos = 2, stringifyJson = true } = options
+  publish(topic: string, payload: any, options: PublishOptions = {}): Promise<IPublishPacket> {
+    const { qos = 2, stringifyJson = true, retain = !isEventOrCommand(topic) } = options
 
     if (stringifyJson) {
       payload = JSON.stringify(payload) // eslint-disable-line no-param-reassign
     }
 
-    return this.client.publish(topic, payload, { retain: !isEventOrCommand(topic), qos })
+    return this.client.publish(topic, payload, { retain, qos })
   }
 
-  unpublish(topic: string) {
-    return this.client.publish(topic, "", { retain: true, qos: 2 })
+  unpublish(topic: string, options: PublishOptions = {}) {
+    const { qos = 2, stringifyJson = false, retain = true } = options
+
+    return this.publish(topic, "", { retain, qos, stringifyJson })
   }
 
   subscribe(topic: string, callback: MessageCallback, options: SubscribeOptions = {}) {

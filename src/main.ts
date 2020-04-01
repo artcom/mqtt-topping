@@ -4,10 +4,9 @@ import HttpClient from "./httpClient"
 import MqttClient from "./mqttClient"
 import { ClientOptions, FlatTopicResult } from "./types"
 
-export { default as MqttClient } from "./mqttClient"
 export { default as HttpClient } from "./httpClient"
 
-export async function connect(uri: string, options?: ClientOptions) {
+export async function connectMqttClient(uri: string, options?: ClientOptions) {
   const client = await connectAsync(uri, options, false)
   return new MqttClient(client, options?.onParseError)
 }
