@@ -47,4 +47,5 @@ export type Subscription = {
 export type Subscriptions = { [topic: string]: Subscription }
 
 export type PublishOptions = { qos?: QoS; stringifyJson?: boolean; retain?: boolean }
+export type UnpublishOptions = { qos?: QoS; retain?: boolean }
 export type SubscribeOptions = { qos?: QoS; parseJson?: boolean }

@@ -5,6 +5,7 @@ import {
   SubscribeOptions,
   Subscriptions,
   PublishOptions,
+  UnpublishOptions,
   SubscriptionHandler,
   ErrorCallback
 } from "./types"
@@ -41,10 +42,10 @@ export default class MqttClient {
     return this.client.publish(topic, payload, { retain, qos })
   }
 
-  unpublish(topic: string, options: PublishOptions = {}): Promise<IPublishPacket> {
-    const { qos = 2, stringifyJson = false, retain = true } = options
+  unpublish(topic: string, options: UnpublishOptions = {}): Promise<IPublishPacket> {
+    const { qos = 2, retain = true } = options
 
-    return this.publish(topic, "", { retain, qos, stringifyJson })
+    return this.publish(topic, "", { retain, qos, stringifyJson: false })
   }
 
   subscribe(
