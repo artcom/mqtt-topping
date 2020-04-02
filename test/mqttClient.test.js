@@ -1,4 +1,4 @@
-const { delayUntil, delay } = require("./util")
+const { delayUntil } = require("./util")
 const { connectMqttClient, HttpClient, unpublishRecursively } = require("../lib/main")
 
 const tcpBrokerUri = process.env.TCP_BROKER_URI || "tcp://localhost"
@@ -16,13 +16,10 @@ describe("MQTT Client", () => {
     mqttClient = await connectMqttClient(tcpBrokerUri, { onParseError })
     httpClient = new HttpClient(httpBrokerUri)
 
-    testTopic = `test/topping-${Date.now()}`
+    testTopic = `test/topping-${Math.random()}`
 
     await mqttClient.publish(`${testTopic}/foo`, "bar")
     await mqttClient.publish(`${testTopic}/baz`, 23)
-
-    // ensure that the publishes are processed on the server before testing
-    await delay(100)
   })
 
   afterEach(async () => {
@@ -115,18 +112,14 @@ describe("MQTT Client", () => {
     })
 
     test("should ignore malformed JSON payloads", async () => {
-      const handler = jest.fn()
       const eventTopic = `${testTopic}/onEvent`
 
-      await mqttClient.subscribe(eventTopic, handler)
+      await mqttClient.subscribe(eventTopic, () => "noop")
 
-      await mqttClient.client.publish(eventTopic, "this is invalid JSON")
-      await mqttClient.client.publish(eventTopic, "42")
+      await mqttClient.publish(eventTopic, "this is invalid JSON", { stringifyJson: false })
 
-      await delayUntil(() => handler.mock.calls.length === 1)
+      await delayUntil(() => onParseError.mock.calls.length === 1)
 
-      expect(handler.mock.calls[0][0]).toBe(42)
-      expect(handler.mock.calls[0][1]).toBe(eventTopic)
       expect(onParseError.mock.calls[0][0]).toEqual(Buffer.from("this is invalid JSON"))
       expect(onParseError.mock.calls[0][1]).toBe(eventTopic)
     })
@@ -137,8 +130,8 @@ describe("MQTT Client", () => {
 
       await mqttClient.subscribe(eventTopic, handler, { parseJson: false })
 
-      await mqttClient.client.publish(eventTopic, "this is invalid JSON")
-      await mqttClient.client.publish(eventTopic, "42")
+      await mqttClient.publish(eventTopic, "this is invalid JSON", { stringifyJson: false })
+      await mqttClient.publish(eventTopic, "42", { stringifyJson: false })
 
       await delayUntil(() => handler.mock.calls.length === 2)
 

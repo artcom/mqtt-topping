@@ -13,7 +13,7 @@ describe("HTTP Query JSON API", () => {
     mqttClient = await connectMqttClient(tcpBrokerUri)
     httpClient = new HttpClient(httpBrokerUri)
 
-    testTopic = `test/topping-${Date.now()}`
+    testTopic = `test/topping-${Math.random()}`
 
     await Promise.all([
       mqttClient.publish(`${testTopic}/array`, ["a", "b", "c"]),

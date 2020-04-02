@@ -13,7 +13,7 @@ describe("HTTP Query API", () => {
     mqttClient = await connectMqttClient(tcpBrokerUri)
     httpClient = new HttpClient(httpBrokerUri)
 
-    testTopic = `test/topping-${Date.now()}`
+    testTopic = `test/topping-${Math.random()}`
 
     await mqttClient.publish(`${testTopic}/foo`, "bar")
     await mqttClient.publish(`${testTopic}/baz`, 23)
