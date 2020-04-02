@@ -1,4 +1,11 @@
-import { AsyncClient, Packet, IPublishPacket, ISubscriptionGrant } from "async-mqtt"
+import {
+  AsyncClient,
+  Packet,
+  IPublishPacket,
+  ISubscriptionGrant,
+  QoS,
+  IUnsubackPacket
+} from "async-mqtt"
 
 import { isEventOrCommand, matchTopic } from "./helpers"
 import {
@@ -6,7 +13,6 @@ import {
   SubscribeOptions,
   Subscriptions,
   PublishOptions,
-  UnpublishOptions,
   SubscriptionHandler,
   ErrorCallback
 } from "./types"
@@ -43,10 +49,8 @@ export default class MqttClient {
     return this.client.publish(topic, payload, { retain, qos })
   }
 
-  unpublish(topic: string, options: UnpublishOptions = {}): Promise<IPublishPacket> {
-    const { qos = 2, retain = true } = options
-
-    return this.publish(topic, "", { retain, qos, stringifyJson: false })
+  unpublish(topic: string, qos: QoS = 2): Promise<IPublishPacket> {
+    return this.publish(topic, "", { qos, retain: true, stringifyJson: false })
   }
 
   subscribe(
@@ -65,7 +69,7 @@ export default class MqttClient {
     return this.client.subscribe(topic, { qos })
   }
 
-  unsubscribe(topic: string, callback: MessageCallback): Promise<void> {
+  unsubscribe(topic: string, callback: MessageCallback): Promise<IUnsubackPacket> | Promise<void> {
     const subscription = this.subscriptions[topic]
 
     if (subscription) {
@@ -74,7 +78,7 @@ export default class MqttClient {
 
     if (subscription.handlers.length === 0) {
       delete this.subscriptions[topic]
-      return this.client.unsubscribe(topic).then(() => undefined)
+      return this.client.unsubscribe(topic)
     } else {
       return Promise.resolve()
     }
