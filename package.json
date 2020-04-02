@@ -11,7 +11,7 @@
     "lint": "eslint --ext .ts src --fix",
     "build": "tsc",
     "build:watch": "tsc -w",
-    "test": "jest --runInBand",
+    "test": "jest",
     "test:debug": "node --inspect-brk node_modules/.bin/jest --runInBand"
   },
   "repository": {
