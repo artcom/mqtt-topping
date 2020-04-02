@@ -38,7 +38,7 @@ export default class HttpClient {
   queryBatch(queries: Query[]): Promise<BatchQueryResult> {
     return axios.post<any, AxiosResponse<BatchQueryResult>>(this.uri, queries.map(omitParseJson))
       .then(({ data }) =>
-        data.map((result: QueryResult, index: number) => {
+        data.map((result: TopicResult | FlatTopicResult[] | ErrorResult, index: number) => {
           const { topic, parseJson = true } = queries[index]
 
           if (parseJson) {
@@ -94,7 +94,7 @@ function makeJsonQuery(topic: string): Query {
 }
 
 function makeObject(result: TopicResult): JsonResult {
-  if ("children" in result && result.children) {
+  if (result.children) {
     const object: JsonResult = {}
 
     result.children.forEach(child => {
@@ -113,7 +113,7 @@ function omitParseJson(query: Query): Query {
   return rest
 }
 
-function parsePayloads(result: QueryResult): void {
+function parsePayloads(result: TopicResult | FlatTopicResult[]): void {
   if (Array.isArray(result)) {
     result.forEach(parsePayloads)
   } else {
@@ -126,6 +126,7 @@ function parsePayload(result: TopicResult | FlatTopicResult): void {
     result.payload = JSON.parse(result.payload) // eslint-disable-line no-param-reassign
   }
 
+  // check for "children" first to ensure it is a TopicResult
   if ("children" in result && result.children) {
     result.children.map(parsePayloads)
   }
