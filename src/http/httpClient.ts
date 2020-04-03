@@ -7,7 +7,8 @@ import {
   QueryResult,
   ErrorResult,
   BatchQueryResult,
-  JsonResult
+  JsonResult,
+  BatchQueryResponse
 } from "./types"
 
 export default class HttpClient {
@@ -28,26 +29,31 @@ export default class HttpClient {
         return data
       }).catch(error => {
         if (error.response) {
-          throw error.response.data
+          throw new Error(JSON.stringify(error.response.data))
         } else {
-          throw error.message
+          throw new Error(error.message)
         }
       })
   }
 
   queryBatch(queries: Query[]): Promise<BatchQueryResult> {
-    return axios.post<any, AxiosResponse<BatchQueryResult>>(this.uri, queries.map(omitParseJson))
+    return axios
+      .post<any, AxiosResponse<BatchQueryResponse>>(
+        this.uri,
+        queries.map(omitParseJson)
+      )
       .then(({ data }) =>
         data.map((result: TopicResult | FlatTopicResult[] | ErrorResult, index: number) => {
           const { topic, parseJson = true } = queries[index]
 
-          if (parseJson) {
-            try {
-              parsePayloads(result)
-            } catch (error) {
-              return {
-                topic,
-                error
+          if ("error" in result && result.error) {
+            return new Error(JSON.stringify(result))
+          } else {
+            if (parseJson) {
+              try {
+                parsePayloads(result)
+              } catch (error) {
+                return new Error(JSON.stringify({ error: error.message, topic }))
               }
             }
           }
@@ -67,9 +73,9 @@ export default class HttpClient {
   async queryJsonBatch(topics: string[]): Promise<JsonResult> {
     const jsonQueries = topics.map(makeJsonQuery)
 
-    const results = (await this.queryBatch(jsonQueries)) as Array<TopicResult | ErrorResult>
+    const results = (await this.queryBatch(jsonQueries)) as Array<TopicResult | Error>
     return results.map(result => {
-      if ("error" in result) {
+      if (result instanceof Error) {
         return result
       }
 

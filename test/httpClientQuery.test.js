@@ -103,10 +103,10 @@ describe("HTTP Query API", () => {
 
       await httpClient.query({ topic: `${testTopic}/does-not-exist` })
         .catch(error => {
-          expect(error).toEqual({
-            topic: `${testTopic}/does-not-exist`,
-            error: 404
-          })
+          expect(error).toEqual(new Error(JSON.stringify({
+            error: 404,
+            topic: `${testTopic}/does-not-exist`
+          })))
         })
     })
   })
@@ -124,7 +124,7 @@ describe("HTTP Query API", () => {
       ])
     })
 
-    test("should include errors in the results", async () => {
+    test("should include errors for non-existing topics", async () => {
       const response = await httpClient.queryBatch([
         { topic: `${testTopic}/foo` },
         { topic: `${testTopic}/does-not-exist` }
@@ -132,7 +132,7 @@ describe("HTTP Query API", () => {
 
       expect(response).toEqual([
         { topic: `${testTopic}/foo`, payload: "bar" },
-        { topic: `${testTopic}/does-not-exist`, error: 404 }
+        new Error(JSON.stringify({ error: 404, topic: `${testTopic}/does-not-exist` }))
       ])
     })
   })
@@ -146,7 +146,7 @@ describe("HTTP Query API", () => {
       expect.assertions(1)
 
       await httpClient.query({ topic: `${testTopic}/invalid` }).catch(error =>
-        expect(error).toEqual("Unexpected token h in JSON at position 1")
+        expect(error).toEqual(new Error("Unexpected token h in JSON at position 1"))
       )
     })
 
@@ -158,7 +158,10 @@ describe("HTTP Query API", () => {
 
       return expect(response).toEqual([
         { topic: `${testTopic}/foo`, payload: "bar" },
-        { topic: `${testTopic}/invalid`, error: new SyntaxError("Unexpected token h in JSON at position 1") }
+        new Error(JSON.stringify({
+          error: "Unexpected token h in JSON at position 1",
+          topic: `${testTopic}/invalid`
+        }))
       ])
     })
 
