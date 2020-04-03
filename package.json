@@ -1,7 +1,7 @@
 {
   "name": "@artcom/mqtt-topping",
   "version": "0.8.13",
-  "description": "Syntactical sugar on top of the MQTT client cake",
+  "description": "Wraps the MQTT.js client to multiplex incoming messages to the subscribed handlers and supports querying retained topics via HTTP.",
   "files": [
     "lib/"
   ],

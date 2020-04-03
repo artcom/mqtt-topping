@@ -1,8 +1,10 @@
 # mqtt-topping
 
-A small wrapper around the MQTT.js client and an API to query retained topics via HTTP.
+Wraps the MQTT.js client to multiplex incoming messages to the subscribed handlers and supports querying retained topics via HTTP.
 
-## MQTT Client Features
+## MQTT Client
+
+### Features
 
 * Subscribe and unsubscribe handler callbacks to individual (wildcard) topics
 * `JSON.stringify` all published payloads
@@ -11,66 +13,139 @@ A small wrapper around the MQTT.js client and an API to query retained topics vi
 * Decide whether to retain a message or not depending on the topic name (retained unless topic is prefixed with `on` or `do`)
 * Publishes and subscriptions are send with quality-of-service 2
 
-### Usage
+### Connect, Subscribe, Publish and Unpublish
 
 ```javascript
-var topping = require("mqtt-topping").default;
+const { connectMqttClient } = require("mqtt-topping")
 
-var client = topping.connect("tcp://broker.example.com", "http://broker.example.com");
+async function main() {
+  const client = await connectMqttClient("tcp://broker.example.com")
 
-client.subscribe("my/topic", function(payload, topic, packet) {
-  console.log("Received Payload " + payload +
-              " for Topic " + topic +
-              " (retained = " + packet.retain + ")");
-});
-```
+  await client.subscribe("my/topic", (payload, topic, packet) => {
+    console.log("Received Payload " + payload +
+                " for Topic " + topic +
+                " (retained = " + packet.retain + ")")
+  });
 
-## HTTP Query Features
-
-### Query
-
-#### Example
-
-```javascript
-client.query({ topic: "example", depth: 0, parseJson: true, flatten: false }).then((result) => {
-  // process result
-});
-```
-
-The query API allows single and batch queries including wildcard topics via HTTP. It specifically supports JSON payloads and parses them if possible. Multiple results of a batch, wildcard or flattened query are structured as `Array` of results. A single result has the format:
-
-```javascript
-{
-  topic: String,
-  payload: PAYLOAD,
-  children?: CHILDREN
+  await client.publish("my/topic", "myPayload")
+  
+  await client.unpublish("my/topic")
 }
-// PAYLOAD = The JSON parsed payload
-// CHILDREN = An array of subtopic results
 ```
 
-#### Options
+## HTTP Client
 
-##### Boolean `parseJson`
+### Features
 
-If `false` `result.payload` contains the raw payload as String. Default is `true`.
+* Works with the broker plugin ["HiveMQ Retained Message Query Plugin"](https://github.com/artcom/hivemq-retained-message-query-plugin)
+* Supports single and batch queries including wildcard topics, additional options are:
+  * `parseJson`: Parse the `result.payload` as JSON. Default is `true`.
+  * `depth`: Specifies the recursive depth of the query. A `depth > 0` returns subtopics in `result.children`. Default is `0`.
+  * `flatten`: Flattens all topics into a flat array. Default is `false`.
+* Supports single and batch json queries which:
+  * return entire topic trees (topics with subtopics) as one JSON object
+  * ignore topic payloads if subtopics exist
 
-##### Number `depth`
+### Single Query
 
-Specifies the recursive depth of the query. A `depth > 0` returns subtopic results in `result.children`. Default is `0`.
+```javascript
+const { connectMqttClient } = require("mqtt-topping")
 
-##### Boolean `flatten`
+async function main() {
+  const client = await connectMqttClient("tcp://broker.example.com");
 
-Flattens all results into a flat array of results. Default is `false`.
+  await client.publish("my/topic", "myPayload")
+
+  // wait a few milliseconds to ensure the data is processed on the server
+
+  const result = await client.query({ topic: "my", depth: 1 })
+  
+  // {
+  // "topic": "my",
+  // "children": [
+  //     {
+  //         "topic": "my/topic",
+  //         "payload": "myPayload"
+  //     }
+  //   ]
+  // }
+}
+```
+
+### Batch Query
+
+```javascript
+const { connectMqttClient } = require("mqtt-topping")
+
+async function main() {
+  const client = await connectMqttClient("tcp://broker.example.com");
+
+  await client.publish("my/topic1", "myPayload1")
+  await client.publish("my/topic2", "myPayload2")
+
+  // wait a few milliseconds to ensure the data is processed on the server
+
+  const result = await client.query([{ topic: "my/topic1" }, { topic: "my/topic2" }])
+
+  // [
+  //   {
+  //       "topic": "my/topic1",
+  //       "payload": "myPayload1"
+  //   },
+  //   {
+  //       "topic": "my/topic2",
+  //       "payload": "myPayload2"
+  //   }
+  // ]
+}
+```
 
 ### QueryJson
 
-#### Example
-
 ```javascript
-client.queryJson({ topic: "example" }).then((result) => {
-  // process result
-});
+const { connectMqttClient } = require("mqtt-topping")
+
+async function main() {
+  const client = await connectMqttClient("tcp://broker.example.com");
+
+  await client.publish("my/topic", "myPayload")
+
+  // wait a few milliseconds to ensure the data is processed on the server
+
+  const result = await client.queryJson("my")
+  
+  // {
+  //   "topic": "myPayload"
+  // }
+}
 ```
 
-The queryJson API allows single and batch queries via HTTP. Multiple results of a batch query are structured as `Array` of results. A single result is an object containing subtopics as properties. The subtopics may be objects with subtopics or the json parsed payload.
+### QueryJsonBatch
+
+```javascript
+const { connectMqttClient } = require("mqtt-topping")
+
+async function main() {
+  const client = await connectMqttClient("tcp://broker.example.com");
+
+  await client.publish("january/first", "eat")
+  await client.publish("january/second", "sleep")
+  await client.publish("february/first", "work")
+  await client.publish("february/second", "repeat")
+
+  // wait a few milliseconds to ensure the data is processed on the server
+
+  const result = await client.queryJson(["january", "february")
+  
+  // [
+  //   {
+  //     "first": "eat"
+  //     "second": "sleep"
+  //   },
+  //   {
+  //     "first": "work"
+  //     "second": "repeat"
+  //   }
+  // ]
+}
+```
