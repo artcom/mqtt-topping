@@ -2,10 +2,14 @@
 All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
-## [1.0.0] - 2020-03-30
+## [1.0.0] - 2020-04-04
 
 ### Changed
-- removed babel in favor of tslint
+- removed babel in favor of typescript
+- split `MqttClient` and `HttpClient` API
+- `HttpClient.queryJson()` now throws on error like `HttpClient.query()`
+- `HttpClient.queryJson()` now returns payloads for topics without children
+- errors in batch queries now return error objects
 
 ### Added
 - onParseError callback option
