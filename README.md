@@ -2,6 +2,8 @@
 
 Wraps the MQTT.js client to multiplex incoming messages to the subscribed handlers and supports querying retained topics via HTTP.
 
+[MQTT.js events](https://github.com/mqttjs/MQTT.js#event-connect) can also be registered on the mqtt-topping client.
+
 Expects that the default MQTT message payload is formatted as JSON.
 
 ## MQTT Client
@@ -15,13 +17,15 @@ Expects that the default MQTT message payload is formatted as JSON.
 * Decide whether to retain a message or not depending on the topic name (retained unless topic is prefixed with `on` or `do`)
 * Publishes and subscriptions are sent with quality-of-service 2
 
-### Connect, Subscribe, Publish and Unpublish
+### Connect, Subscribe, Publish, Unpublish and Register Event "offline"
 
 ```javascript
 const { connectMqttClient } = require("mqtt-topping")
 
 async function main() {
   const client = await connectMqttClient("tcp://broker.example.com")
+
+  client.on("offline", () => console.error("Client is offline. Trying to reconnect."))
 
   await client.subscribe("my/topic", (payload, topic, packet) => {
     console.log("Received Payload " + payload +
