@@ -27,7 +27,7 @@ async function main() {
     console.log("Received Payload " + payload +
                 " for Topic " + topic +
                 " (retained = " + packet.retain + ")")
-  });
+  })
 
   await client.publish("my/topic", "myPayload")
   
@@ -51,16 +51,17 @@ async function main() {
 ### Single Query
 
 ```javascript
-const { connectMqttClient } = require("mqtt-topping")
+const { connectMqttClient, HttpClient } = require("mqtt-topping")
 
 async function main() {
-  const client = await connectMqttClient("tcp://broker.example.com");
+  const client = await connectMqttClient("tcp://broker.example.com")
+  const httpClient = new HttpClient("http://broker.example.com/query")
 
   await client.publish("my/topic", "myPayload")
 
   // wait a few milliseconds to ensure the data is processed on the server
 
-  const result = await client.query({ topic: "my", depth: 1 })
+  const result = await httpClient.query({ topic: "my", depth: 1 })
   
   // {
   // "topic": "my",
@@ -77,17 +78,18 @@ async function main() {
 ### Batch Query
 
 ```javascript
-const { connectMqttClient } = require("mqtt-topping")
+const { connectMqttClient, HttpClient } = require("mqtt-topping")
 
 async function main() {
-  const client = await connectMqttClient("tcp://broker.example.com");
+  const client = await connectMqttClient("tcp://broker.example.com")
+  const httpClient = new HttpClient("http://broker.example.com/query")
 
   await client.publish("my/topic1", "myPayload1")
   await client.publish("my/topic2", "myPayload2")
 
   // wait a few milliseconds to ensure the data is processed on the server
 
-  const result = await client.query([{ topic: "my/topic1" }, { topic: "my/topic2" }])
+  const result = await httpClient.query([{ topic: "my/topic1" }, { topic: "my/topic2" }])
 
   // [
   //   {
@@ -105,16 +107,17 @@ async function main() {
 ### QueryJson
 
 ```javascript
-const { connectMqttClient } = require("mqtt-topping")
+const { connectMqttClient, HttpClient } = require("mqtt-topping")
 
 async function main() {
-  const client = await connectMqttClient("tcp://broker.example.com");
+  const client = await connectMqttClient("tcp://broker.example.com")
+  const httpClient = new HttpClient("http://broker.example.com/query")
 
   await client.publish("my/topic", "myPayload")
 
   // wait a few milliseconds to ensure the data is processed on the server
 
-  const result = await client.queryJson("my")
+  const result = await httpClient.queryJson("my")
   
   // {
   //   "topic": "myPayload"
@@ -125,10 +128,11 @@ async function main() {
 ### QueryJsonBatch
 
 ```javascript
-const { connectMqttClient } = require("mqtt-topping")
+const { connectMqttClient, HttpClient } = require("mqtt-topping")
 
 async function main() {
-  const client = await connectMqttClient("tcp://broker.example.com");
+  const client = await connectMqttClient("tcp://broker.example.com")
+  const httpClient = new HttpClient("http://broker.example.com/query")
 
   await client.publish("january/first", "eat")
   await client.publish("january/second", "sleep")
@@ -137,7 +141,7 @@ async function main() {
 
   // wait a few milliseconds to ensure the data is processed on the server
 
-  const result = await client.queryJson(["january", "february")
+  const result = await httpClient.queryJson(["january", "february")
   
   // [
   //   {
@@ -150,4 +154,22 @@ async function main() {
   //   }
   // ]
 }
+```
+
+## Development
+
+### Build
+
+```bash
+npm install
+npm run build
+```
+
+### Test
+
+The tests require a running MQTT broker instance with the ["HiveMQ Retained Message Query Plugin"](https://github.com/artcom/hivemq-retained-message-query-plugin).
+
+```bash
+npm install
+npm run test
 ```
