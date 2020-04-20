@@ -4,6 +4,7 @@ import MqttClient from "./mqtt/mqttClient"
 import { ClientOptions } from "./mqtt/types"
 
 export { default as HttpClient } from "./http/httpClient"
+export { default as MqttClient } from "./mqtt/mqttClient"
 export { unpublishRecursively } from "./utils"
 
 export async function connectMqttClient(uri: string, options: ClientOptions = {}) {
