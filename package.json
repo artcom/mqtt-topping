@@ -12,7 +12,8 @@
     "build": "tsc",
     "build:watch": "tsc -w",
     "test": "jest",
-    "test:debug": "node --inspect-brk node_modules/.bin/jest --runInBand"
+    "test:debug": "node --inspect-brk node_modules/.bin/jest --runInBand",
+    "prepublishOnly": "npm run lint && npm run build && npm run test"
   },
   "repository": {
     "type": "git",
