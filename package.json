@@ -1,6 +1,6 @@
 {
   "name": "@artcom/mqtt-topping",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Wraps the MQTT.js client to multiplex incoming messages to the subscribed handlers and supports querying retained topics via HTTP.",
   "files": [
     "lib/"
