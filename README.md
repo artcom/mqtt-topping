@@ -20,7 +20,7 @@ Expects that the default MQTT message payload is formatted as JSON.
 ### Connect, Subscribe, Publish, Unpublish and Register Event "offline"
 
 ```javascript
-const { connectMqttClient } = require("mqtt-topping")
+const { connectMqttClient } = require("@artcom/mqtt-topping")
 
 async function main() {
   const client = await connectMqttClient("tcp://broker.example.com")
@@ -55,7 +55,7 @@ async function main() {
 ### Single Query
 
 ```javascript
-const { connectMqttClient, HttpClient } = require("mqtt-topping")
+const { connectMqttClient, HttpClient } = require("@artcom/mqtt-topping")
 
 async function main() {
   const client = await connectMqttClient("tcp://broker.example.com")
@@ -82,7 +82,7 @@ async function main() {
 ### Batch Query
 
 ```javascript
-const { connectMqttClient, HttpClient } = require("mqtt-topping")
+const { connectMqttClient, HttpClient } = require("@artcom/mqtt-topping")
 
 async function main() {
   const client = await connectMqttClient("tcp://broker.example.com")
@@ -111,7 +111,7 @@ async function main() {
 ### QueryJson
 
 ```javascript
-const { connectMqttClient, HttpClient } = require("mqtt-topping")
+const { connectMqttClient, HttpClient } = require("@artcom/mqtt-topping")
 
 async function main() {
   const client = await connectMqttClient("tcp://broker.example.com")
@@ -132,7 +132,7 @@ async function main() {
 ### QueryJsonBatch
 
 ```javascript
-const { connectMqttClient, HttpClient } = require("mqtt-topping")
+const { connectMqttClient, HttpClient } = require("@artcom/mqtt-topping")
 
 async function main() {
   const client = await connectMqttClient("tcp://broker.example.com")
