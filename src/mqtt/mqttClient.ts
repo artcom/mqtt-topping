@@ -35,8 +35,8 @@ export default class MqttClient {
     this.client.on("message", this.handleMessage.bind(this))
   }
 
-  disconnect() {
-    return this.client.end()
+  disconnect(force: boolean): Promise<void> {
+    return this.client.end(force)
   }
 
   // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types

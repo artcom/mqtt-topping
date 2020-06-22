@@ -10,10 +10,17 @@ describe("MQTT Client Events", () => {
   })
 
   test("should publish close event", async () => {
+    const onEnd = jest.fn()
+    client.on("end", onEnd)
+
     const onClose = jest.fn()
     client.on("close", onClose)
 
-    await client.disconnect()
+    await client.disconnect(true)
+
+    expect(onEnd.mock.calls.length).toBe(1)
+
+    await new Promise(resolve => setTimeout(resolve, 1000))
 
     expect(onClose.mock.calls.length).toBe(1)
   })
