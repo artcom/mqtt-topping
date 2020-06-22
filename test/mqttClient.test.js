@@ -13,7 +13,11 @@ describe("MQTT Client", () => {
   beforeEach(async () => {
     onParseError = jest.fn()
 
-    mqttClient = await connectAsync(tcpBrokerUri, { onParseError })
+    mqttClient = await connectAsync(
+      tcpBrokerUri,
+      { onParseError, appId: "Test", deviceId: "DeviceId" }
+    )
+
     httpClient = new HttpClient(httpBrokerUri)
 
     testTopic = `test/topping-${Math.random()}`
