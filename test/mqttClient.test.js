@@ -1,5 +1,5 @@
 const { delayUntil, delay } = require("./util")
-const { connectMqttClient, HttpClient, unpublishRecursively } = require("../lib/main")
+const { connectAsync, HttpClient, unpublishRecursively } = require("../lib/main")
 
 const tcpBrokerUri = process.env.TCP_BROKER_URI || "tcp://localhost"
 const httpBrokerUri = process.env.HTTP_BROKER_URI || "http://localhost:8080/query"
@@ -13,7 +13,7 @@ describe("MQTT Client", () => {
   beforeEach(async () => {
     onParseError = jest.fn()
 
-    mqttClient = await connectMqttClient(tcpBrokerUri, { onParseError })
+    mqttClient = await connectAsync(tcpBrokerUri, { onParseError })
     httpClient = new HttpClient(httpBrokerUri)
 
     testTopic = `test/topping-${Math.random()}`

@@ -1,5 +1,5 @@
 const { delay } = require("./util")
-const { connectMqttClient, HttpClient, unpublishRecursively } = require("../lib/main")
+const { connectAsync, HttpClient, unpublishRecursively } = require("../lib/main")
 
 const tcpBrokerUri = process.env.TCP_BROKER_URI || "tcp://localhost"
 const httpBrokerUri = process.env.HTTP_BROKER_URI || "http://localhost:8080/query"
@@ -10,7 +10,7 @@ describe("HTTP Query API", () => {
   let testTopic
 
   beforeEach(async () => {
-    mqttClient = await connectMqttClient(tcpBrokerUri)
+    mqttClient = await connectAsync(tcpBrokerUri)
     httpClient = new HttpClient(httpBrokerUri)
 
     testTopic = `test/topping-${Math.random()}`

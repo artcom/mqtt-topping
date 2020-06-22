@@ -1,4 +1,4 @@
-const { connectMqttClient } = require("../lib/main")
+const { connectAsync } = require("../lib/main")
 
 const tcpBrokerUri = process.env.TCP_BROKER_URI || "tcp://localhost"
 
@@ -6,7 +6,7 @@ describe("MQTT Client Events", () => {
   let client
 
   beforeEach(async () => {
-    client = await connectMqttClient(tcpBrokerUri)
+    client = await connectAsync(tcpBrokerUri)
   })
 
   test("should publish close event", async () => {

@@ -1,4 +1,4 @@
-import { connectAsync } from "async-mqtt"
+import * as mqtt from "async-mqtt"
 
 import MqttClient from "./mqtt/mqttClient"
 import { ClientOptions } from "./mqtt/types"
@@ -6,15 +6,23 @@ import { ClientOptions } from "./mqtt/types"
 export { default as HttpClient } from "./http/httpClient"
 export { unpublishRecursively } from "./utils"
 
-export async function connectMqttClient(uri: string, options: ClientOptions = {}) {
-  const { onParseError, ...rest } = options
-  const clientOptions = {
-    keepalive: 3,
-    connectTimeout: 3000,
-    ...rest
-  }
+const KEEP_ALIVE = 3
+const CONNECT_TIMEOUT = 3000
 
-  const client = await connectAsync(uri, clientOptions, false)
+export function connect(uri: string, options: ClientOptions = {}) : MqttClient {
+  const { onParseError, ...rest } = options
+  const clientOptions = { keepalive: KEEP_ALIVE, connectTimeout: CONNECT_TIMEOUT, ...rest }
+
+  const client = mqtt.connect(uri, clientOptions)
+  return new MqttClient(client, onParseError)
+}
+
+export async function connectAsync(uri: string, options: ClientOptions = {})
+  : Promise<MqttClient> {
+  const { onParseError, ...rest } = options
+  const clientOptions = { keepalive: KEEP_ALIVE, connectTimeout: CONNECT_TIMEOUT, ...rest }
+
+  const client = await mqtt.connectAsync(uri, clientOptions, false)
   return new MqttClient(client, onParseError)
 }
 
