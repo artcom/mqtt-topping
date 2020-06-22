@@ -39,6 +39,7 @@ export default class MqttClient {
     return this.client.end()
   }
 
+  // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
   publish(topic: string, payload: any, options: PublishOptions = {}): Promise<IPublishPacket> {
     const { qos = 2, stringifyJson = true, retain = !isEventOrCommand(topic) } = options
 

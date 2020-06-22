@@ -5,7 +5,7 @@ import { default as HttpClient } from "./http/httpClient"
 
 export async function unpublishRecursively(
   mqttClient: MqttClient, httpClient: HttpClient, topic: string
-) {
+) : Promise<IPublishPacket[]> {
   const result = await httpClient.query({ topic, depth: -1, flatten: true, parseJson: false })
   const subTopics = result as FlatTopicResult[]
   const unpublishPromises = subTopics.reduce<Promise<IPublishPacket>[]>(
