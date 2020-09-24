@@ -20,10 +20,10 @@ Expects that the default MQTT message payload is formatted as JSON.
 ### Connect, Subscribe, Publish, Unpublish and Register Event "offline"
 
 ```javascript
-const { connectMqttClient } = require("@artcom/mqtt-topping")
+const { connectAsync } = require("@artcom/mqtt-topping")
 
 async function main() {
-  const client = await connectMqttClient("tcp://broker.example.com")
+  const client = await connectAsync("tcp://broker.example.com")
 
   client.on("offline", () => console.error("Client is offline. Trying to reconnect."))
 
@@ -55,10 +55,10 @@ async function main() {
 ### Single Query
 
 ```javascript
-const { connectMqttClient, HttpClient } = require("@artcom/mqtt-topping")
+const { connectAsync, HttpClient } = require("@artcom/mqtt-topping")
 
 async function main() {
-  const client = await connectMqttClient("tcp://broker.example.com")
+  const client = await connectAsync("tcp://broker.example.com")
   const httpClient = new HttpClient("http://broker.example.com/query")
 
   await client.publish("my/topic", "myPayload")
@@ -82,10 +82,10 @@ async function main() {
 ### Batch Query
 
 ```javascript
-const { connectMqttClient, HttpClient } = require("@artcom/mqtt-topping")
+const { connectAsync, HttpClient } = require("@artcom/mqtt-topping")
 
 async function main() {
-  const client = await connectMqttClient("tcp://broker.example.com")
+  const client = await connectAsync("tcp://broker.example.com")
   const httpClient = new HttpClient("http://broker.example.com/query")
 
   await client.publish("my/topic1", "myPayload1")
@@ -111,10 +111,10 @@ async function main() {
 ### QueryJson
 
 ```javascript
-const { connectMqttClient, HttpClient } = require("@artcom/mqtt-topping")
+const { connectAsync, HttpClient } = require("@artcom/mqtt-topping")
 
 async function main() {
-  const client = await connectMqttClient("tcp://broker.example.com")
+  const client = await connectAsync("tcp://broker.example.com")
   const httpClient = new HttpClient("http://broker.example.com/query")
 
   await client.publish("my/topic", "myPayload")
@@ -132,10 +132,10 @@ async function main() {
 ### QueryJsonBatch
 
 ```javascript
-const { connectMqttClient, HttpClient } = require("@artcom/mqtt-topping")
+const { connectAsync, HttpClient } = require("@artcom/mqtt-topping")
 
 async function main() {
-  const client = await connectMqttClient("tcp://broker.example.com")
+  const client = await connectAsync("tcp://broker.example.com")
   const httpClient = new HttpClient("http://broker.example.com/query")
 
   await client.publish("january/first", "eat")
