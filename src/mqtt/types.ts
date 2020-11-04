@@ -1,4 +1,10 @@
-import { IClientOptions, Packet, QoS } from "async-mqtt"
+import {
+  IClientOptions,
+  IClientPublishOptions,
+  IClientSubscribeOptions,
+  Packet,
+  QoS
+} from "async-mqtt"
 
 export type ErrorCallback = (payload: Buffer, topic: string) => void
 export interface ClientOptions extends IClientOptions {
@@ -7,8 +13,13 @@ export interface ClientOptions extends IClientOptions {
     onParseError?: ErrorCallback
 }
 
-export type PublishOptions = { qos?: QoS; stringifyJson?: boolean; retain?: boolean }
-export type SubscribeOptions = { qos?: QoS; parseJson?: boolean }
+export interface PublishOptions extends IClientPublishOptions {
+    stringifyJson?: boolean
+}
+
+export interface SubscribeOptions extends IClientSubscribeOptions {
+    parseJson?: boolean
+}
 
 export type MessageCallback = (payload: any, topic: string, packet: Packet) => void
 export type TopicMatcher = (topic: string) => boolean

@@ -40,14 +40,20 @@ export default class MqttClient {
   }
 
   // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-  publish(topic: string, payload: any, options: PublishOptions = {}): Promise<IPublishPacket> {
-    const { qos = 2, stringifyJson = true, retain = !isEventOrCommand(topic) } = options
+  publish(topic: string, payload: any, publishOptions: PublishOptions = {})
+    : Promise<IPublishPacket> {
+    const {
+      qos = 2,
+      stringifyJson = true,
+      retain = !isEventOrCommand(topic),
+      ...options
+    } = publishOptions
 
     if (stringifyJson) {
       payload = JSON.stringify(payload) // eslint-disable-line no-param-reassign
     }
 
-    return this.client.publish(topic, payload, { retain, qos })
+    return this.client.publish(topic, payload, { retain, qos, ...options })
   }
 
   unpublish(topic: string, qos: QoS = 2): Promise<IPublishPacket> {
@@ -57,9 +63,9 @@ export default class MqttClient {
   subscribe(
     topic: string,
     callback: MessageCallback,
-    options: SubscribeOptions = {}
+    subscribeOptions: SubscribeOptions = { qos: 2 }
   ): Promise<ISubscriptionGrant[]> {
-    const { qos = 2, parseJson = true } = options
+    const { qos = 2, parseJson = true, ...options } = subscribeOptions
 
     if (!this.subscriptions[topic]) {
       this.subscriptions[topic] = { matchTopic: matchTopic(topic), handlers: [] }
@@ -67,7 +73,7 @@ export default class MqttClient {
 
     this.subscriptions[topic].handlers.push({ callback, qos, parseJson })
 
-    return this.client.subscribe(topic, { qos })
+    return this.client.subscribe(topic, { qos, ...options })
   }
 
   unsubscribe(topic: string, callback: MessageCallback): Promise<IUnsubackPacket> | Promise<void> {
