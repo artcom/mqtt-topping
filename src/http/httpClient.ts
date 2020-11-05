@@ -19,7 +19,7 @@ export default class HttpClient {
   }
 
   query(query: Query): Promise<QueryResult> {
-    return axios.post<any, AxiosResponse<QueryResult>>(this.uri, omitParseJson(query))
+    return axios.post<any, AxiosResponse<QueryResult>>(`${this.uri}/query`, omitParseJson(query))
       .then(({ data }) => {
         const { parseJson = true } = query
         if (parseJson) {
@@ -39,7 +39,7 @@ export default class HttpClient {
   queryBatch(queries: Query[]): Promise<BatchQueryResult> {
     return axios
       .post<any, AxiosResponse<BatchQueryResponse>>(
-        this.uri,
+        `${this.uri}/query`,
         queries.map(omitParseJson)
       )
       .then(({ data }) =>
