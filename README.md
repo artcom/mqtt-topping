@@ -93,7 +93,7 @@ async function main() {
 
   // wait a few milliseconds to ensure the data is processed on the server
 
-  const result = await httpClient.query([{ topic: "my/topic1" }, { topic: "my/topic2" }])
+  const result = await httpClient.queryBatch([{ topic: "my/topic1" }, { topic: "my/topic2" }])
 
   // [
   //   {
@@ -145,7 +145,7 @@ async function main() {
 
   // wait a few milliseconds to ensure the data is processed on the server
 
-  const result = await httpClient.queryJson(["january", "february")
+  const result = await httpClient.queryJsonBatch(["january", "february"])
   
   // [
   //   {
