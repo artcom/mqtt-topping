@@ -160,7 +160,7 @@ async function main() {
 }
 ```
 
-### Unpublish Recusrively
+### Unpublish Recursively
 
 ```javascript
 const { connectAsync, HttpClient, unpublishRecursively } = require("@artcom/mqtt-topping")
