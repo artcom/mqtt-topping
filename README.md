@@ -160,6 +160,30 @@ async function main() {
 }
 ```
 
+### Unpublish Recusrively
+
+```javascript
+const { connectAsync, HttpClient, unpublishRecursively } = require("@artcom/mqtt-topping")
+
+async function main() {
+  const client = await connectAsync("tcp://broker.example.com")
+  const httpClient = new HttpClient("http://broker.example.com/query")
+
+  await client.publish("january/first", "eat")
+  await client.publish("january/second", "sleep")
+  await client.publish("february/first", "work")
+  await client.publish("february/second", "repeat")
+
+  // wait a few milliseconds to ensure the data is processed on the server
+
+  const result = await unpublishRecursively(mqttClient, httpClient, "february")
+  
+  // remaining published topics on the broker
+  // january/first: "eat"
+  // january/second: "sleep"
+}
+```
+
 ## Development
 
 ### Build
