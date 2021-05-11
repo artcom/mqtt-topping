@@ -1,3 +1,5 @@
+/* eslint-disable jest/no-conditional-expect */
+
 const { delayUntil, delay } = require("./util")
 const { connectAsync, HttpClient, unpublishRecursively } = require("../lib/main")
 
