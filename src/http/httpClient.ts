@@ -52,7 +52,7 @@ export default class HttpClient {
             if (parseJson) {
               try {
                 parsePayloads(result)
-              } catch (error) {
+              } catch (error: any) {
                 return new Error(JSON.stringify({ error: error.message, topic }))
               }
             }
