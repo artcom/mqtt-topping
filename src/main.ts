@@ -36,11 +36,15 @@ export {
 } from "./mqtt/types"
 
 function processOptions(options: ClientOptions) {
-  const { onParseError, appId, deviceId, clientId, ...rest } = options
+  const { onParseError, appId, deviceId, clientId, will, ...rest } = options
+
   const clientOptions = {
     clientId: clientId || createClientId(appId, deviceId),
     keepalive: KEEP_ALIVE,
     connectTimeout: CONNECT_TIMEOUT,
+    will: will && will.stringifyJson !== false
+      ? { ...will, payload: JSON.stringify(will.payload) }
+      : will,
     ...rest
   }
 

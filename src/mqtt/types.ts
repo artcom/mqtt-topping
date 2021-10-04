@@ -7,9 +7,11 @@ import {
 } from "async-mqtt"
 
 export type ErrorCallback = (payload: Buffer, topic: string) => void
+
 export interface ClientOptions extends IClientOptions {
     appId?: string,
     deviceId?: string,
+    will?: IClientOptions["will"] & { stringifyJson: boolean; payload: any; },
     onParseError?: ErrorCallback
 }
 
