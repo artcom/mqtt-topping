@@ -1,4 +1,4 @@
-const { isEventOrCommand, matchTopic } = require("../lib/mqtt/helpers")
+const { isEventOrCommand, isValidTopic, matchTopic } = require("../lib/mqtt/helpers")
 
 describe("Helpers", () => {
   describe("isEventOrCommand", () => {
@@ -131,6 +131,16 @@ describe("Helpers", () => {
         expect(matchTopic(subscription)("foo2.0")).toBe(true)
         expect(matchTopic(subscription)("foo200")).toBe(false)
       })
+    })
+  })
+
+  describe("isValidTopic", () => {
+    test("should validate topic", () => {
+      expect(isValidTopic("foo/bar/baz")).toBe(true)
+      expect(isValidTopic("$foo/bar/baz")).toBe(false)
+      expect(isValidTopic("foo/+/baz")).toBe(false)
+      expect(isValidTopic("foo/bar/#")).toBe(false)
+      expect(isValidTopic(42)).toBe(false)
     })
   })
 })

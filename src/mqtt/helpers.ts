@@ -36,3 +36,14 @@ export function matchTopic(subscription: string): TopicMatcher {
     return true
   }
 }
+
+const INVALID_TOPIC_CHARS = /[+#]/
+
+export function isValidTopic(topic: string): boolean {
+  return (
+    typeof topic === "string" &&
+    topic.length > 0 &&
+    topic[0] !== "$" &&
+    !INVALID_TOPIC_CHARS.test(topic)
+  )
+}

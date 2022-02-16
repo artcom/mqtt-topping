@@ -1,6 +1,6 @@
 import { AsyncClient, Packet, ISubscriptionGrant, QoS, IUnsubackPacket } from "async-mqtt"
 
-import { isEventOrCommand, matchTopic } from "./helpers"
+import { isEventOrCommand, isValidTopic, matchTopic } from "./helpers"
 import {
   MessageCallback,
   SubscribeOptions,
@@ -40,6 +40,10 @@ export default class MqttClient {
       retain = !isEventOrCommand(topic),
       ...options
     } = publishOptions
+
+    if (!isValidTopic(topic)) {
+      throw new Error(`Invalid topic: ${topic}`)
+    }
 
     if (stringifyJson) {
       payload = JSON.stringify(payload) // eslint-disable-line no-param-reassign
