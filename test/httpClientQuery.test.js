@@ -35,7 +35,7 @@ describe("HTTP Query API", () => {
 
       expect(response).toEqual({
         topic: `${testTopic}/foo`,
-        payload: "bar"
+        payload: "bar",
       })
     })
 
@@ -45,7 +45,7 @@ describe("HTTP Query API", () => {
       expect(response).toEqual([
         { topic: `${testTopic}/baz`, payload: 23 },
         { topic: `${testTopic}/foo`, payload: "bar" },
-        { topic: `${testTopic}/more` }
+        { topic: `${testTopic}/more` },
       ])
     })
 
@@ -56,8 +56,8 @@ describe("HTTP Query API", () => {
         topic: `${testTopic}/more`,
         children: [
           { topic: `${testTopic}/more/one`, payload: 1 },
-          { topic: `${testTopic}/more/two`, payload: 2 }
-        ]
+          { topic: `${testTopic}/more/two`, payload: 2 },
+        ],
       })
     })
 
@@ -69,20 +69,20 @@ describe("HTTP Query API", () => {
         children: [
           {
             topic: `${testTopic}/baz`,
-            payload: 23
+            payload: 23,
           },
           {
             topic: `${testTopic}/foo`,
-            payload: "bar"
+            payload: "bar",
           },
           {
             topic: `${testTopic}/more`,
             children: [
               { topic: `${testTopic}/more/one`, payload: 1 },
-              { topic: `${testTopic}/more/two`, payload: 2 }
-            ]
-          }
-        ]
+              { topic: `${testTopic}/more/two`, payload: 2 },
+            ],
+          },
+        ],
       })
     })
 
@@ -94,74 +94,73 @@ describe("HTTP Query API", () => {
         { topic: `${testTopic}/foo`, payload: "bar" },
         { topic: `${testTopic}/more` },
         { topic: `${testTopic}/more/one`, payload: 1 },
-        { topic: `${testTopic}/more/two`, payload: 2 }
+        { topic: `${testTopic}/more/two`, payload: 2 },
       ])
     })
 
-    test("should fail when querying an inexistent topic", async () => {
-      expect.assertions(1)
-
-      await httpClient.query({ topic: `${testTopic}/does-not-exist` })
-        .catch(error => {
-          expect(error).toEqual(new Error(JSON.stringify({
+    test("should fail when querying an inexistent topic", async () =>
+      expect(httpClient.query({ topic: `${testTopic}/does-not-exist` })).rejects.toThrow(
+        new Error(
+          JSON.stringify({
             error: 404,
-            topic: `${testTopic}/does-not-exist`
-          })))
-        })
-    })
+            topic: `${testTopic}/does-not-exist`,
+          }),
+        ),
+      ))
   })
 
   describe("Batch Queries", () => {
     test("should query multiple topics", async () => {
       const response = await httpClient.queryBatch([
         { topic: `${testTopic}/foo` },
-        { topic: `${testTopic}/baz` }
+        { topic: `${testTopic}/baz` },
       ])
 
       expect(response).toEqual([
         { topic: `${testTopic}/foo`, payload: "bar" },
-        { topic: `${testTopic}/baz`, payload: 23 }
+        { topic: `${testTopic}/baz`, payload: 23 },
       ])
     })
 
     test("should include errors for non-existing topics", async () => {
       const response = await httpClient.queryBatch([
         { topic: `${testTopic}/foo` },
-        { topic: `${testTopic}/does-not-exist` }
+        { topic: `${testTopic}/does-not-exist` },
       ])
 
       expect(response).toEqual([
         { topic: `${testTopic}/foo`, payload: "bar" },
-        new Error(JSON.stringify({ error: 404, topic: `${testTopic}/does-not-exist` }))
+        new Error(JSON.stringify({ error: 404, topic: `${testTopic}/does-not-exist` })),
       ])
     })
   })
 
   describe("JSON Parsing", () => {
     beforeEach(async () => {
-      await mqttClient.publish(`${testTopic}/invalid`, "this is invalid JSON", { stringifyJson: false })
+      await mqttClient.publish(`${testTopic}/invalid`, "this is invalid JSON", {
+        stringifyJson: false,
+      })
     })
 
-    test("should fail on invalid payloads", async () => {
-      expect.assertions(1)
-
-      await httpClient.query({ topic: `${testTopic}/invalid` }).catch(error =>
-        expect(error).toEqual(new Error("Unexpected token h in JSON at position 1"))
-      )
-    })
+    test("should fail on invalid payloads", async () =>
+      expect(httpClient.query({ topic: `${testTopic}/invalid` })).rejects.toThrow(
+        new Error("Unexpected token h in JSON at position 1"),
+      ))
 
     test("should represent errors in batch queries", async () => {
       const response = await httpClient.queryBatch([
         { topic: `${testTopic}/foo` },
-        { topic: `${testTopic}/invalid` }
+        { topic: `${testTopic}/invalid` },
       ])
 
       return expect(response).toEqual([
         { topic: `${testTopic}/foo`, payload: "bar" },
-        new Error(JSON.stringify({
-          error: "Unexpected token h in JSON at position 1",
-          topic: `${testTopic}/invalid`
-        }))
+        new Error(
+          JSON.stringify({
+            error: "Unexpected token h in JSON at position 1",
+            topic: `${testTopic}/invalid`,
+          }),
+        ),
       ])
     })
 
@@ -169,19 +168,19 @@ describe("HTTP Query API", () => {
       const response = await httpClient.query({ topic: `${testTopic}/invalid`, parseJson: false })
       expect(response).toEqual({
         topic: `${testTopic}/invalid`,
-        payload: "this is invalid JSON"
+        payload: "this is invalid JSON",
       })
     })
 
     test("can be disabled in batch queries", async () => {
       const response = await httpClient.queryBatch([
         { topic: `${testTopic}/foo` },
-        { topic: `${testTopic}/invalid`, parseJson: false }
+        { topic: `${testTopic}/invalid`, parseJson: false },
       ])
 
       expect(response).toEqual([
         { topic: `${testTopic}/foo`, payload: "bar" },
-        { topic: `${testTopic}/invalid`, payload: "this is invalid JSON" }
+        { topic: `${testTopic}/invalid`, payload: "this is invalid JSON" },
       ])
     })
   })

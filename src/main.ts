@@ -9,14 +9,13 @@ export { unpublishRecursively } from "./utils"
 const KEEP_ALIVE = 3
 const CONNECT_TIMEOUT = 3000
 
-export function connect(uri: string, options: ClientOptions = {}) : MqttClient {
+export function connect(uri: string, options: ClientOptions = {}): MqttClient {
   const { onParseError, clientOptions } = processOptions(options)
   const client = mqtt.connect(uri, clientOptions)
   return new MqttClient(client, onParseError)
 }
 
-export async function connectAsync(uri: string, options: ClientOptions = {})
-  : Promise<MqttClient> {
+export async function connectAsync(uri: string, options: ClientOptions = {}): Promise<MqttClient> {
   const { onParseError, clientOptions } = processOptions(options)
   const client = await mqtt.connectAsync(uri, clientOptions, false)
   return new MqttClient(client, onParseError)
@@ -32,7 +31,7 @@ export {
   Subscriptions,
   PublishOptions,
   SubscriptionHandler,
-  ErrorCallback
+  ErrorCallback,
 } from "./mqtt/types"
 
 function processOptions(options: ClientOptions) {
@@ -42,10 +41,11 @@ function processOptions(options: ClientOptions) {
     clientId: clientId || createClientId(appId, deviceId),
     keepalive: KEEP_ALIVE,
     connectTimeout: CONNECT_TIMEOUT,
-    will: will && will.stringifyJson !== false
-      ? { ...will, payload: JSON.stringify(will.payload) }
-      : will,
-    ...rest
+    will:
+      will && will.stringifyJson !== false
+        ? { ...will, payload: JSON.stringify(will.payload) }
+        : will,
+    ...rest,
   }
 
   return { onParseError, clientOptions }

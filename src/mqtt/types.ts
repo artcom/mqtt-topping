@@ -3,24 +3,24 @@ import {
   IClientPublishOptions,
   IClientSubscribeOptions,
   Packet,
-  QoS
+  QoS,
 } from "async-mqtt"
 
 export type ErrorCallback = (payload: Buffer, topic: string) => void
 
 export interface ClientOptions extends IClientOptions {
-    appId?: string,
-    deviceId?: string,
-    will?: IClientOptions["will"] & { stringifyJson: boolean; payload: any; },
-    onParseError?: ErrorCallback
+  appId?: string
+  deviceId?: string
+  will?: IClientOptions["will"] & { stringifyJson: boolean; payload: any }
+  onParseError?: ErrorCallback
 }
 
 export interface PublishOptions extends IClientPublishOptions {
-    stringifyJson?: boolean
+  stringifyJson?: boolean
 }
 
 export interface SubscribeOptions extends IClientSubscribeOptions {
-    parseJson?: boolean
+  parseJson?: boolean
 }
 
 export type MessageCallback = (payload: any, topic: string, packet: Packet) => void

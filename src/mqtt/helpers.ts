@@ -8,9 +8,11 @@ export function isEventOrCommand(topic: string): boolean {
   const lastTopicLevel = topic.substr(topic.lastIndexOf("/") + 1)
   const prefix = lastTopicLevel.substr(0, 2)
 
-  return lastTopicLevel.length > 2
-    && (prefix === "on" || prefix === "do")
-    && isUpperCase(lastTopicLevel.charAt(2))
+  return (
+    lastTopicLevel.length > 2 &&
+    (prefix === "on" || prefix === "do") &&
+    isUpperCase(lastTopicLevel.charAt(2))
+  )
 }
 
 export function matchTopic(subscription: string): TopicMatcher {
@@ -24,7 +26,7 @@ export function matchTopic(subscription: string): TopicMatcher {
     for (let i = 0; i < length; i++) {
       const sub = subLevels[i]
       const top = topLevels[i]
-      const match = sub === top || sub === "+" && top !== undefined
+      const match = sub === top || (sub === "+" && top !== undefined)
 
       if (!match) {
         return false

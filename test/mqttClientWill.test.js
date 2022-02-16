@@ -26,19 +26,16 @@ describe("MQTT Client Will", () => {
     const willTopic = `${testTopic}/lastWill`
     const willPayload = { foo: "bar" }
 
-    mqttClient = await connectAsync(
-      tcpBrokerUri,
-      {
-        appId: "Test",
-        deviceId: "DeviceId",
-        connectTimeout: 500,
-        will: {
-          topic: willTopic,
-          payload: willPayload,
-          retain: true
-        }
-      }
-    )
+    mqttClient = await connectAsync(tcpBrokerUri, {
+      appId: "Test",
+      deviceId: "DeviceId",
+      connectTimeout: 500,
+      will: {
+        topic: willTopic,
+        payload: willPayload,
+        retain: true,
+      },
+    })
 
     // eslint-disable-next-line no-underscore-dangle
     mqttClient.client._client.stream.destroy()
@@ -55,20 +52,17 @@ describe("MQTT Client Will", () => {
     const willTopic = `${testTopic}/lastWill`
     const willPayload = "raw_text"
 
-    mqttClient = await connectAsync(
-      tcpBrokerUri,
-      {
-        appId: "Test",
-        deviceId: "DeviceId",
-        connectTimeout: 500,
-        will: {
-          topic: willTopic,
-          payload: willPayload,
-          stringifyJson: false,
-          retain: true
-        }
-      }
-    )
+    mqttClient = await connectAsync(tcpBrokerUri, {
+      appId: "Test",
+      deviceId: "DeviceId",
+      connectTimeout: 500,
+      will: {
+        topic: willTopic,
+        payload: willPayload,
+        stringifyJson: false,
+        retain: true,
+      },
+    })
 
     // eslint-disable-next-line no-underscore-dangle
     mqttClient.client._client.stream.destroy()

@@ -1,11 +1,4 @@
-import {
-  AsyncClient,
-  Packet,
-  IPublishPacket,
-  ISubscriptionGrant,
-  QoS,
-  IUnsubackPacket
-} from "async-mqtt"
+import { AsyncClient, Packet, ISubscriptionGrant, QoS, IUnsubackPacket } from "async-mqtt"
 
 import { isEventOrCommand, matchTopic } from "./helpers"
 import {
@@ -14,7 +7,7 @@ import {
   Subscriptions,
   PublishOptions,
   SubscriptionHandler,
-  ErrorCallback
+  ErrorCallback,
 } from "./types"
 
 export default class MqttClient {
@@ -40,8 +33,7 @@ export default class MqttClient {
   }
 
   // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-  publish(topic: string, payload: any, publishOptions: PublishOptions = {})
-    : Promise<IPublishPacket> {
+  publish(topic: string, payload: any, publishOptions: PublishOptions = {}): Promise<void> {
     const {
       qos = 2,
       stringifyJson = true,
@@ -56,14 +48,14 @@ export default class MqttClient {
     return this.client.publish(topic, payload, { retain, qos, ...options })
   }
 
-  unpublish(topic: string, qos: QoS = 2): Promise<IPublishPacket> {
+  unpublish(topic: string, qos: QoS = 2): Promise<void> {
     return this.publish(topic, "", { qos, retain: true, stringifyJson: false })
   }
 
   subscribe(
     topic: string,
     callback: MessageCallback,
-    subscribeOptions: SubscribeOptions = { qos: 2 }
+    subscribeOptions: SubscribeOptions = { qos: 2 },
   ): Promise<ISubscriptionGrant[]> {
     const { qos = 2, parseJson = true, ...options } = subscribeOptions
 
@@ -80,7 +72,9 @@ export default class MqttClient {
     const subscription = this.subscriptions[topic]
 
     if (subscription) {
-      subscription.handlers = subscription.handlers.filter(handler => handler.callback !== callback)
+      subscription.handlers = subscription.handlers.filter(
+        (handler) => handler.callback !== callback,
+      )
     }
 
     if (subscription.handlers.length === 0) {
@@ -95,11 +89,13 @@ export default class MqttClient {
     const [success, json] = parsePayload(payload)
     let logParseError = false
 
-    const matchingHandlers = Object.keys(this.subscriptions)
-      .reduce<SubscriptionHandler[]>((handlers, key) => {
+    const matchingHandlers = Object.keys(this.subscriptions).reduce<SubscriptionHandler[]>(
+      (handlers, key) => {
         const subscription = this.subscriptions[key]
         return subscription.matchTopic(topic) ? [...handlers, ...subscription.handlers] : handlers
-      }, [])
+      },
+      [],
+    )
 
     matchingHandlers.forEach(({ callback, parseJson }) => {
       if (parseJson) {

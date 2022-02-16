@@ -8,7 +8,7 @@ import {
   ErrorResult,
   BatchQueryResult,
   JsonResult,
-  BatchQueryResponse
+  BatchQueryResponse,
 } from "./types"
 
 export default class HttpClient {
@@ -19,7 +19,8 @@ export default class HttpClient {
   }
 
   query(query: Query): Promise<QueryResult> {
-    return axios.post<any, AxiosResponse<QueryResult>>(`${this.uri}/query`, omitParseJson(query))
+    return axios
+      .post<any, AxiosResponse<QueryResult>>(`${this.uri}/query`, omitParseJson(query))
       .then(({ data }) => {
         const { parseJson = true } = query
         if (parseJson) {
@@ -27,7 +28,8 @@ export default class HttpClient {
         }
 
         return data
-      }).catch(error => {
+      })
+      .catch((error) => {
         if (error.response) {
           throw new Error(JSON.stringify(error.response.data))
         } else {
@@ -38,10 +40,7 @@ export default class HttpClient {
 
   queryBatch(queries: Query[]): Promise<BatchQueryResult> {
     return axios
-      .post<any, AxiosResponse<BatchQueryResponse>>(
-        `${this.uri}/query`,
-        queries.map(omitParseJson)
-      )
+      .post<any, AxiosResponse<BatchQueryResponse>>(`${this.uri}/query`, queries.map(omitParseJson))
       .then(({ data }) =>
         data.map((result: TopicResult | FlatTopicResult[] | ErrorResult, index: number) => {
           const { topic, parseJson = true } = queries[index]
@@ -59,7 +58,7 @@ export default class HttpClient {
           }
 
           return result
-        })
+        }),
       )
   }
 
@@ -74,7 +73,7 @@ export default class HttpClient {
     const jsonQueries = topics.map(makeJsonQuery)
 
     const results = (await this.queryBatch(jsonQueries)) as Array<TopicResult | Error>
-    return results.map(result => {
+    return results.map((result) => {
       if (result instanceof Error) {
         return result
       }
@@ -84,7 +83,7 @@ export default class HttpClient {
       } catch (error) {
         return {
           topic: result.topic,
-          error
+          error,
         }
       }
     })
@@ -103,7 +102,7 @@ function makeObject(result: TopicResult): JsonResult {
   if (result.children) {
     const object: JsonResult = {}
 
-    result.children.forEach(child => {
+    result.children.forEach((child) => {
       const key = child.topic.split("/").pop() as string
       object[key] = makeObject(child)
     })

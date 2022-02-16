@@ -13,10 +13,12 @@ describe("MQTT5 Client features", () => {
   beforeEach(async () => {
     onParseError = jest.fn()
 
-    mqttClient = await connectAsync(
-      tcpBrokerUri,
-      { onParseError, appId: "Test", deviceId: "DeviceId", protocolVersion: 5 }
-    )
+    mqttClient = await connectAsync(tcpBrokerUri, {
+      onParseError,
+      appId: "Test",
+      deviceId: "DeviceId",
+      protocolVersion: 5,
+    })
 
     httpClient = new HttpClient(httpBrokerUri)
 

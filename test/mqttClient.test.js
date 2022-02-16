@@ -15,10 +15,11 @@ describe("MQTT Client", () => {
   beforeEach(async () => {
     onParseError = jest.fn()
 
-    mqttClient = await connectAsync(
-      tcpBrokerUri,
-      { onParseError, appId: "Test", deviceId: "DeviceId" }
-    )
+    mqttClient = await connectAsync(tcpBrokerUri, {
+      onParseError,
+      appId: "Test",
+      deviceId: "DeviceId",
+    })
 
     httpClient = new HttpClient(httpBrokerUri)
 
@@ -44,10 +45,7 @@ describe("MQTT Client", () => {
       await mqttClient.subscribe(`${testTopic}/foo`, handler1)
       await mqttClient.subscribe(`${testTopic}/baz`, handler2)
 
-      await delayUntil(() =>
-        handler1.mock.calls.length === 1 &&
-        handler2.mock.calls.length === 1
-      )
+      await delayUntil(() => handler1.mock.calls.length === 1 && handler2.mock.calls.length === 1)
 
       expect(handler1.mock.calls[0][0]).toBe("bar")
       expect(handler1.mock.calls[0][1]).toBe(`${testTopic}/foo`)
@@ -223,7 +221,7 @@ describe("MQTT Client", () => {
       const response = await httpClient.query({ topic: testTopic, depth: 1 })
       expect(response).toEqual({
         topic: testTopic,
-        children: [{ topic: `${testTopic}/baz`, payload: 23 }]
+        children: [{ topic: `${testTopic}/baz`, payload: 23 }],
       })
     })
 
@@ -232,7 +230,7 @@ describe("MQTT Client", () => {
 
       await unpublishRecursively(mqttClient, httpClient, testTopic)
 
-      await httpClient.query({ topic: testTopic }).catch(error => {
+      await httpClient.query({ topic: testTopic }).catch((error) => {
         expect(error).toEqual(new Error(JSON.stringify({ error: 404, topic: testTopic })))
       })
     })

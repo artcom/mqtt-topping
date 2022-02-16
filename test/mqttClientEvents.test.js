@@ -20,7 +20,7 @@ describe("MQTT Client Events", () => {
 
     expect(onEnd.mock.calls.length).toBe(1)
 
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    await new Promise((resolve) => setTimeout(resolve, 1000))
 
     expect(onClose.mock.calls.length).toBe(1)
   })

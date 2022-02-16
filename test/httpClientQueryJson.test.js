@@ -25,7 +25,7 @@ describe("HTTP Query JSON API", () => {
       mqttClient.publish(`${testTopic}/valid/nested2/one`, 10),
       mqttClient.publish(`${testTopic}/valid/nested3/one`, 100),
       mqttClient.publish(`${testTopic}/valid/string`, "bar"),
-      mqttClient.publish(`${testTopic}/invalid/payload`, "invalid", { stringifyJson: false })
+      mqttClient.publish(`${testTopic}/invalid/payload`, "invalid", { stringifyJson: false }),
     ])
 
     // ensure that the publishes are processed on the server before testing
@@ -46,14 +46,14 @@ describe("HTTP Query JSON API", () => {
         array: ["a", "b", "c"],
         nested1: {
           one: 1,
-          two: 2
+          two: 2,
         },
         nested2: {
-          one: 10
+          one: 10,
         },
         nested3: {
-          one: 100
-        }
+          one: 100,
+        },
       })
     })
 
@@ -65,28 +65,38 @@ describe("HTTP Query JSON API", () => {
     test("should throw for inexistent topic", async () => {
       expect.assertions(1)
 
-      await httpClient.queryJson(`${testTopic}/does-not-exist`).catch(error =>
-        expect(error).toEqual(new Error(JSON.stringify({
-          error: 404,
-          topic: `${testTopic}/does-not-exist`
-        }), null, 2))
+      await httpClient.queryJson(`${testTopic}/does-not-exist`).catch((error) =>
+        expect(error).toEqual(
+          new Error(
+            JSON.stringify({
+              error: 404,
+              topic: `${testTopic}/does-not-exist`,
+            }),
+            null,
+            2,
+          ),
+        ),
       )
     })
 
     test("should throw on invalid payloads", async () => {
       expect.assertions(1)
 
-      await httpClient.queryJson(`${testTopic}/invalid`).catch(error =>
-        expect(error).toEqual(new Error("Unexpected token i in JSON at position 0"))
-      )
+      await httpClient
+        .queryJson(`${testTopic}/invalid`)
+        .catch((error) =>
+          expect(error).toEqual(new Error("Unexpected token i in JSON at position 0")),
+        )
     })
 
     test("should throw for wildcard queries", () => {
       expect.assertions(1)
 
-      return httpClient.queryJson(`${testTopic}/valid/+`).catch(error =>
-        expect(error).toEqual(new Error("Wildcards are not supported in queryJson()."))
-      )
+      return httpClient
+        .queryJson(`${testTopic}/valid/+`)
+        .catch((error) =>
+          expect(error).toEqual(new Error("Wildcards are not supported in queryJson().")),
+        )
     })
   })
 
@@ -94,43 +104,42 @@ describe("HTTP Query JSON API", () => {
     test("should query multiple topics", async () => {
       const response = await httpClient.queryJsonBatch([
         `${testTopic}/valid/nested1`,
-        `${testTopic}/valid/nested2`
+        `${testTopic}/valid/nested2`,
       ])
 
       expect(response).toEqual([
         {
           one: 1,
-          two: 2
+          two: 2,
         },
         {
-          one: 10
-        }
+          one: 10,
+        },
       ])
     })
 
     test("should throw for wildcard queries", async () => {
       expect.assertions(1)
 
-      return httpClient.queryJsonBatch([
-        `${testTopic}/valid/+`,
-        `${testTopic}/valid/nested1`
-      ]).catch(error =>
-        expect(error).toEqual(new Error("Wildcards are not supported in queryJson()."))
-      )
+      return httpClient
+        .queryJsonBatch([`${testTopic}/valid/+`, `${testTopic}/valid/nested1`])
+        .catch((error) =>
+          expect(error).toEqual(new Error("Wildcards are not supported in queryJson().")),
+        )
     })
 
     test("should include errors for non-existing topics", async () => {
       const response = await httpClient.queryJsonBatch([
         `${testTopic}/valid/nested1`,
-        `${testTopic}/does-not-exist`
+        `${testTopic}/does-not-exist`,
       ])
 
       expect(response).toEqual([
         {
           one: 1,
-          two: 2
+          two: 2,
         },
-        new Error(JSON.stringify({ error: 404, topic: `${testTopic}/does-not-exist` }))
+        new Error(JSON.stringify({ error: 404, topic: `${testTopic}/does-not-exist` })),
       ])
     })
   })
