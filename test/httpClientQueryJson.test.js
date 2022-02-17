@@ -73,9 +73,9 @@ describe("HTTP Query JSON API", () => {
               topic: `${testTopic}/does-not-exist`,
             }),
             null,
-            2,
-          ),
-        ),
+            2
+          )
+        )
       )
     })
 
@@ -85,7 +85,7 @@ describe("HTTP Query JSON API", () => {
       await httpClient
         .queryJson(`${testTopic}/invalid`)
         .catch((error) =>
-          expect(error).toEqual(new Error("Unexpected token i in JSON at position 0")),
+          expect(error).toEqual(new Error("Unexpected token i in JSON at position 0"))
         )
     })
 
@@ -95,7 +95,7 @@ describe("HTTP Query JSON API", () => {
       return httpClient
         .queryJson(`${testTopic}/valid/+`)
         .catch((error) =>
-          expect(error).toEqual(new Error("Wildcards are not supported in queryJson().")),
+          expect(error).toEqual(new Error("Wildcards are not supported in queryJson()."))
         )
     })
   })
@@ -124,7 +124,7 @@ describe("HTTP Query JSON API", () => {
       return httpClient
         .queryJsonBatch([`${testTopic}/valid/+`, `${testTopic}/valid/nested1`])
         .catch((error) =>
-          expect(error).toEqual(new Error("Wildcards are not supported in queryJson().")),
+          expect(error).toEqual(new Error("Wildcards are not supported in queryJson()."))
         )
     })
 

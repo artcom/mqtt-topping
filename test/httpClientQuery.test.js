@@ -104,8 +104,8 @@ describe("HTTP Query API", () => {
           JSON.stringify({
             error: 404,
             topic: `${testTopic}/does-not-exist`,
-          }),
-        ),
+          })
+        )
       ))
   })
 
@@ -144,7 +144,7 @@ describe("HTTP Query API", () => {
 
     test("should fail on invalid payloads", async () =>
       expect(httpClient.query({ topic: `${testTopic}/invalid` })).rejects.toThrow(
-        new Error("Unexpected token h in JSON at position 1"),
+        new Error("Unexpected token h in JSON at position 1")
       ))
 
     test("should represent errors in batch queries", async () => {
@@ -159,7 +159,7 @@ describe("HTTP Query API", () => {
           JSON.stringify({
             error: "Unexpected token h in JSON at position 1",
             topic: `${testTopic}/invalid`,
-          }),
+          })
         ),
       ])
     })

@@ -59,7 +59,7 @@ export default class MqttClient {
   subscribe(
     topic: string,
     callback: MessageCallback,
-    subscribeOptions: SubscribeOptions = { qos: 2 },
+    subscribeOptions: SubscribeOptions = { qos: 2 }
   ): Promise<ISubscriptionGrant[]> {
     const { qos = 2, parseJson = true, ...options } = subscribeOptions
 
@@ -77,7 +77,7 @@ export default class MqttClient {
 
     if (subscription) {
       subscription.handlers = subscription.handlers.filter(
-        (handler) => handler.callback !== callback,
+        (handler) => handler.callback !== callback
       )
     }
 
@@ -98,7 +98,7 @@ export default class MqttClient {
         const subscription = this.subscriptions[key]
         return subscription.matchTopic(topic) ? [...handlers, ...subscription.handlers] : handlers
       },
-      [],
+      []
     )
 
     matchingHandlers.forEach(({ callback, parseJson }) => {
