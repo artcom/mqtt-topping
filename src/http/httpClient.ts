@@ -114,6 +114,7 @@ function makeObject(result: TopicResult): JsonResult {
 }
 
 function omitParseJson(query: Query): Query {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { parseJson, ...rest } = query
   return rest
 }

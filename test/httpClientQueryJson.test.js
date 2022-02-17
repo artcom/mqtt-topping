@@ -1,5 +1,3 @@
-/* eslint-disable jest/no-conditional-expect */
-
 const { delay } = require("./util")
 const { connectAsync, HttpClient, unpublishRecursively } = require("../lib/main")
 
@@ -62,42 +60,27 @@ describe("HTTP Query JSON API", () => {
       expect(response).toBe("bar")
     })
 
-    test("should throw for inexistent topic", async () => {
-      expect.assertions(1)
-
-      await httpClient.queryJson(`${testTopic}/does-not-exist`).catch((error) =>
-        expect(error).toEqual(
-          new Error(
-            JSON.stringify({
-              error: 404,
-              topic: `${testTopic}/does-not-exist`,
-            }),
-            null,
-            2
-          )
+    test("should throw for inexistent topic", async () =>
+      expect(httpClient.queryJson(`${testTopic}/does-not-exist`)).rejects.toThrow(
+        new Error(
+          JSON.stringify({
+            error: 404,
+            topic: `${testTopic}/does-not-exist`,
+          }),
+          null,
+          2
         )
-      )
-    })
+      ))
 
-    test("should throw on invalid payloads", async () => {
-      expect.assertions(1)
+    test("should throw on invalid payloads", async () =>
+      expect(httpClient.queryJson(`${testTopic}/invalid`)).rejects.toThrow(
+        new Error("Unexpected token i in JSON at position 0")
+      ))
 
-      await httpClient
-        .queryJson(`${testTopic}/invalid`)
-        .catch((error) =>
-          expect(error).toEqual(new Error("Unexpected token i in JSON at position 0"))
-        )
-    })
-
-    test("should throw for wildcard queries", () => {
-      expect.assertions(1)
-
-      return httpClient
-        .queryJson(`${testTopic}/valid/+`)
-        .catch((error) =>
-          expect(error).toEqual(new Error("Wildcards are not supported in queryJson()."))
-        )
-    })
+    test("should throw for wildcard queries", () =>
+      expect(httpClient.queryJson(`${testTopic}/valid/+`)).rejects.toThrow(
+        new Error("Wildcards are not supported in queryJson().")
+      ))
   })
 
   describe("Batch Queries", () => {
@@ -118,15 +101,10 @@ describe("HTTP Query JSON API", () => {
       ])
     })
 
-    test("should throw for wildcard queries", async () => {
-      expect.assertions(1)
-
-      return httpClient
-        .queryJsonBatch([`${testTopic}/valid/+`, `${testTopic}/valid/nested1`])
-        .catch((error) =>
-          expect(error).toEqual(new Error("Wildcards are not supported in queryJson()."))
-        )
-    })
+    test("should throw for wildcard queries", async () =>
+      expect(
+        httpClient.queryJsonBatch([`${testTopic}/valid/+`, `${testTopic}/valid/nested1`])
+      ).rejects.toThrow(new Error("Wildcards are not supported in queryJson().")))
 
     test("should include errors for non-existing topics", async () => {
       const response = await httpClient.queryJsonBatch([

@@ -1,5 +1,4 @@
 {
   "printWidth": 100,
-  "semi": false,
-  "jsxBracketSameLine": true
+  "semi": false
 }

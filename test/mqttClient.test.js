@@ -1,5 +1,3 @@
-/* eslint-disable jest/no-conditional-expect */
-
 const { delayUntil, delay } = require("./util")
 const { connectAsync, HttpClient, unpublishRecursively } = require("../lib/main")
 
@@ -86,17 +84,15 @@ describe("MQTT Client", () => {
 
       await delayUntil(() => handler.mock.calls.length === 2)
 
-      if (handler.mock.calls[0][1] === `${testTopic}/baz`) {
-        expect(handler.mock.calls[0][0]).toBe(23)
-        expect(handler.mock.calls[0][1]).toBe(`${testTopic}/baz`)
-        expect(handler.mock.calls[1][0]).toBe("bar")
-        expect(handler.mock.calls[1][1]).toBe(`${testTopic}/foo`)
-      } else {
-        expect(handler.mock.calls[0][0]).toBe("bar")
-        expect(handler.mock.calls[0][1]).toBe(`${testTopic}/foo`)
-        expect(handler.mock.calls[1][0]).toBe(23)
-        expect(handler.mock.calls[1][1]).toBe(`${testTopic}/baz`)
+      const topics = {
+        [handler.mock.calls[0][1]]: handler.mock.calls[0][0],
+        [handler.mock.calls[1][1]]: handler.mock.calls[1][0],
       }
+
+      expect(topics).toEqual({
+        [`${testTopic}/baz`]: 23,
+        [`${testTopic}/foo`]: "bar",
+      })
     })
 
     test("should retrieve retained messages using plus wildcard", async () => {
@@ -105,17 +101,15 @@ describe("MQTT Client", () => {
 
       await delayUntil(() => handler.mock.calls.length === 2)
 
-      if (handler.mock.calls[0][1] === `${testTopic}/foo`) {
-        expect(handler.mock.calls[0][0]).toBe("bar")
-        expect(handler.mock.calls[0][1]).toBe(`${testTopic}/foo`)
-        expect(handler.mock.calls[1][0]).toBe(23)
-        expect(handler.mock.calls[1][1]).toBe(`${testTopic}/baz`)
-      } else {
-        expect(handler.mock.calls[0][0]).toBe(23)
-        expect(handler.mock.calls[0][1]).toBe(`${testTopic}/baz`)
-        expect(handler.mock.calls[1][0]).toBe("bar")
-        expect(handler.mock.calls[1][1]).toBe(`${testTopic}/foo`)
+      const topics = {
+        [handler.mock.calls[0][1]]: handler.mock.calls[0][0],
+        [handler.mock.calls[1][1]]: handler.mock.calls[1][0],
       }
+
+      expect(topics).toEqual({
+        [`${testTopic}/baz`]: 23,
+        [`${testTopic}/foo`]: "bar",
+      })
     })
 
     test("should ignore malformed JSON payloads", async () => {
@@ -226,13 +220,11 @@ describe("MQTT Client", () => {
     })
 
     test("should unpublish messages recursively", async () => {
-      expect.assertions(1)
-
       await unpublishRecursively(mqttClient, httpClient, testTopic)
 
-      await httpClient.query({ topic: testTopic }).catch((error) => {
-        expect(error).toEqual(new Error(JSON.stringify({ error: 404, topic: testTopic })))
-      })
+      return expect(httpClient.query({ topic: testTopic })).rejects.toThrow(
+        new Error(JSON.stringify({ error: 404, topic: testTopic }))
+      )
     })
   })
 })

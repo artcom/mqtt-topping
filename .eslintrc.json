@@ -1,34 +1,9 @@
 {
   "root": true,
   "parser": "@typescript-eslint/parser",
-  "plugins": [
-    "@typescript-eslint"
-  ],
-  "extends": [
-    "artcom",
-    "plugin:@typescript-eslint/eslint-recommended",
-    "plugin:@typescript-eslint/recommended"
-  ],
+  "plugins": ["@typescript-eslint"],
+  "extends": ["eslint:recommended", "plugin:@typescript-eslint/recommended", "prettier"],
   "rules": {
-    "import/no-unresolved": "off",
-    "no-prototype-builtins": "off",
-    "@typescript-eslint/no-use-before-define": [
-      "error",
-      {
-        "functions": false,
-        "classes": true,
-        "variables": true
-      }
-    ],
-    "@typescript-eslint/explicit-function-return-type": "off",
-    "@typescript-eslint/no-unused-vars": [
-      "error",
-      {
-        "vars": "all",
-        "args": "after-used",
-        "ignoreRestSiblings": true
-      }
-    ],
     "@typescript-eslint/no-explicit-any": "off"
   }
 }
