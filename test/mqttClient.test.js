@@ -141,6 +141,17 @@ describe("MQTT Client", () => {
       expect(handler.mock.calls[1][0]).toBe("42")
       expect(handler.mock.calls[1][1]).toBe(eventTopic)
     })
+  })
+
+  describe("unsubscribe", () => {
+    test("should ignore unsubscribe of unknown topic", async () => {
+      const handler = jest.fn()
+      const topic = `${testTopic}/onFoo`
+
+      expect(mqttClient.subscriptions).toEqual({})
+      await mqttClient.unsubscribe(topic, handler)
+      expect(mqttClient.subscriptions).toEqual({})
+    })
 
     test("should not receive messages after unsubscribing", async () => {
       const handler = jest.fn()
