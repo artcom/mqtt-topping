@@ -74,19 +74,18 @@ export default class MqttClient {
 
   unsubscribe(topic: string, callback: MessageCallback): Promise<IUnsubackPacket> | Promise<void> {
     const subscription = this.subscriptions[topic]
-
     if (subscription) {
       subscription.handlers = subscription.handlers.filter(
         (handler) => handler.callback !== callback
       )
+
+      if (subscription.handlers.length === 0) {
+        delete this.subscriptions[topic]
+        return this.client.unsubscribe(topic)
+      }
     }
 
-    if (subscription.handlers.length === 0) {
-      delete this.subscriptions[topic]
-      return this.client.unsubscribe(topic)
-    } else {
-      return Promise.resolve()
-    }
+    return Promise.resolve()
   }
 
   handleMessage(topic: string, payload: Buffer, packet: Packet): void {
