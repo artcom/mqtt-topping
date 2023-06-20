@@ -10,8 +10,8 @@
   "scripts": {
     "format": "prettier --write src test",
     "lint": "eslint --ext .ts src --fix",
-    "build": "tsc",
-    "build:watch": "tsc -w",
+    "prebuild": "tsc",
+    "build": "webpack",
     "test": "jest",
     "test:debug": "node --inspect-brk node_modules/.bin/jest --runInBand",
     "prepublishOnly": "npm run lint && npm run build"
@@ -22,7 +22,7 @@
   },
   "dependencies": {
     "async-mqtt": "^2.6.2",
-    "axios": "^0.27.2"
+    "axios": "^1.4.0"
   },
   "devDependencies": {
     "@types/jest": "^29.0.0",
