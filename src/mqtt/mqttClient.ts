@@ -88,6 +88,16 @@ export default class MqttClient {
     return Promise.resolve()
   }
 
+  forceUnsubscribe(topic: string): Promise<IUnsubackPacket> | Promise<void> {
+    const subscription = this.subscriptions[topic]
+    if (subscription) {
+      delete this.subscriptions[topic]
+      return this.client.unsubscribe(topic)
+    }
+
+    return Promise.resolve()
+  }
+
   handleMessage(topic: string, payload: Buffer, packet: Packet): void {
     const [success, json] = parsePayload(payload)
     let logParseError = false
