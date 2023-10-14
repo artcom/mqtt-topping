@@ -1,10 +1,6 @@
-import {
-  IClientOptions,
-  IClientPublishOptions,
-  IClientSubscribeOptions,
-  Packet,
-  QoS,
-} from "async-mqtt"
+import { IClientOptions, IClientPublishOptions, IClientSubscribeOptions, Packet } from "mqtt"
+
+export declare type QoS = 0 | 1 | 2
 
 export type ErrorCallback = (payload: Buffer, topic: string) => void
 

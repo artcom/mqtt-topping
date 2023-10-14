@@ -1,12 +1,13 @@
 import { FlatTopicResult } from "./http/types"
 import { default as MqttClient } from "./mqtt/mqttClient"
 import { default as HttpClient } from "./http/httpClient"
+import { Packet } from "mqtt"
 
 export async function unpublishRecursively(
   mqttClient: MqttClient,
   httpClient: HttpClient,
   topic: string
-): Promise<void[]> {
+): Promise<(void | Packet | undefined)[]> {
   const query = { topic, depth: -1, flatten: true, parseJson: false }
   const subTopics = (await httpClient.query(query)) as FlatTopicResult[]
 

@@ -36,7 +36,7 @@ describe("MQTT Client Will", () => {
     })
 
     // eslint-disable-next-line no-underscore-dangle
-    mqttClient.client._client.stream.destroy()
+    mqttClient.client.stream.destroy()
     mqttClient.disconnect()
 
     // ensure that the timeout applies on the server
@@ -63,7 +63,7 @@ describe("MQTT Client Will", () => {
     })
 
     // eslint-disable-next-line no-underscore-dangle
-    mqttClient.client._client.stream.destroy()
+    mqttClient.client.stream.destroy()
     mqttClient.disconnect()
 
     // ensure that the timeout applies on the server
