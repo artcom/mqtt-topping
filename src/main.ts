@@ -1,4 +1,4 @@
-import * as mqtt from "async-mqtt"
+import * as mqtt from "mqtt"
 
 import MqttClient from "./mqtt/mqttClient"
 import { ClientOptions } from "./mqtt/types"
@@ -17,14 +17,14 @@ export function connect(uri: string, options: ClientOptions = {}): MqttClient {
 
 export async function connectAsync(uri: string, options: ClientOptions = {}): Promise<MqttClient> {
   const { onParseError, clientOptions } = processOptions(options)
-  const client = await mqtt.connectAsync(uri, clientOptions, false)
+  const client = await mqtt.connectAsync(uri, clientOptions)
   return new MqttClient(client, onParseError)
 }
 
-// export types
 export { default as MqttClient } from "./mqtt/mqttClient"
 
-export * as mqttjs from "async-mqtt"
+export * as mqttjs from "mqtt"
+
 export {
   MessageCallback,
   SubscribeOptions,
@@ -37,13 +37,13 @@ export {
 function processOptions(options: ClientOptions) {
   const { onParseError, appId, deviceId, clientId, will, ...rest } = options
 
-  const clientOptions = {
+  const clientOptions: ClientOptions = {
     clientId: clientId || createClientId(appId, deviceId),
     keepalive: KEEP_ALIVE,
     connectTimeout: CONNECT_TIMEOUT,
     will:
       will && will.stringifyJson !== false
-        ? { ...will, payload: JSON.stringify(will.payload) }
+        ? { ...will, payload: Buffer.from(JSON.stringify(will.payload)) }
         : will,
     ...rest,
   }

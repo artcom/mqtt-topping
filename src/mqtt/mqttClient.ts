@@ -1,4 +1,4 @@
-import { AsyncClient, Packet, ISubscriptionGrant, QoS, IUnsubackPacket } from "async-mqtt"
+import { MqttClient as Mqtt, Packet, ISubscriptionGrant } from "mqtt"
 
 import { isEventOrCommand, isValidTopic, matchTopic } from "./helpers"
 import {
@@ -8,17 +8,18 @@ import {
   PublishOptions,
   SubscriptionHandler,
   ErrorCallback,
+  QoS,
 } from "./types"
 
 export default class MqttClient {
-  client: AsyncClient
-  on: AsyncClient["on"]
-  once: AsyncClient["once"]
+  client: Mqtt
+  on: Mqtt["on"]
+  once: Mqtt["once"]
 
   private onParseError?: ErrorCallback
   private subscriptions: Subscriptions
 
-  constructor(client: AsyncClient, onParseError?: ErrorCallback) {
+  constructor(client: Mqtt, onParseError?: ErrorCallback) {
     this.client = client
     this.onParseError = onParseError
 
@@ -29,11 +30,15 @@ export default class MqttClient {
   }
 
   disconnect(force: boolean): Promise<void> {
-    return this.client.end(force)
+    return this.client.endAsync(force)
   }
 
   // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-  publish(topic: string, payload: any, publishOptions: PublishOptions = {}): Promise<void> {
+  publish(
+    topic: string,
+    payload: any,
+    publishOptions: PublishOptions = {}
+  ): Promise<Packet | undefined> {
     const {
       qos = 2,
       stringifyJson = true,
@@ -49,10 +54,10 @@ export default class MqttClient {
       payload = JSON.stringify(payload) // eslint-disable-line no-param-reassign
     }
 
-    return this.client.publish(topic, payload, { retain, qos, ...options })
+    return this.client.publishAsync(topic, payload, { retain, qos, ...options })
   }
 
-  unpublish(topic: string, qos: QoS = 2): Promise<void> {
+  unpublish(topic: string, qos: QoS = 2): Promise<void> | Promise<Packet | undefined> {
     return this.publish(topic, "", { qos, retain: true, stringifyJson: false })
   }
 
@@ -69,10 +74,13 @@ export default class MqttClient {
 
     this.subscriptions[topic].handlers.push({ callback, qos, parseJson })
 
-    return this.client.subscribe(topic, { qos, ...options })
+    return this.client.subscribeAsync(topic, { qos, ...options })
   }
 
-  unsubscribe(topic: string, callback: MessageCallback): Promise<IUnsubackPacket> | Promise<void> {
+  unsubscribe(
+    topic: string,
+    callback: MessageCallback
+  ): Promise<void> | Promise<Packet | undefined> {
     const subscription = this.subscriptions[topic]
     if (subscription) {
       subscription.handlers = subscription.handlers.filter(
@@ -81,18 +89,19 @@ export default class MqttClient {
 
       if (subscription.handlers.length === 0) {
         delete this.subscriptions[topic]
-        return this.client.unsubscribe(topic)
+        return this.client.unsubscribeAsync(topic)
       }
     }
 
     return Promise.resolve()
   }
 
-  forceUnsubscribe(topic: string): Promise<IUnsubackPacket> | Promise<void> {
+  forceUnsubscribe(topic: string): Promise<void> | Promise<Packet | undefined> {
     const subscription = this.subscriptions[topic]
     if (subscription) {
       delete this.subscriptions[topic]
-      return this.client.unsubscribe(topic)
+      this.client.unsubscribeAsync(topic)
+      return this.client.unsubscribeAsync(topic)
     }
 
     return Promise.resolve()
