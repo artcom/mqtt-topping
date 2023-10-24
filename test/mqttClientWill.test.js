@@ -35,7 +35,6 @@ describe("MQTT Client Will", () => {
       },
     })
 
-    // eslint-disable-next-line no-underscore-dangle
     mqttClient.client.stream.destroy()
     mqttClient.disconnect()
 
@@ -62,7 +61,6 @@ describe("MQTT Client Will", () => {
       },
     })
 
-    // eslint-disable-next-line no-underscore-dangle
     mqttClient.client.stream.destroy()
     mqttClient.disconnect()
 
