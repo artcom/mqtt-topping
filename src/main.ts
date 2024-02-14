@@ -1,4 +1,4 @@
-import * as mqtt from "mqtt"
+import mqtt from "mqtt"
 
 import MqttClient from "./mqtt/mqttClient"
 import { ClientOptions } from "./mqtt/types"
