@@ -199,5 +199,6 @@ The tests require a running MQTT broker instance with the ["HiveMQ Retained Mess
 
 ```bash
 npm install
+npm run build
 npm run test
 ```
