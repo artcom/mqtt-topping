@@ -186,6 +186,15 @@ async function main() {
 
 ## Development
 
+## Windows
+
+install mosquitto from https://mosquitto.org/download/
+navigate to C:\Program Files\mosquitto>
+
+subscribe to the broker via a wildcard
+
+C:\Program Files\mosquitto> mosquitto_sub.exe -h 127.0.0.1 -p 1883 -t "#" -v
+
 ### Build
 
 ```bash

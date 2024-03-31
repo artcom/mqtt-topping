@@ -53,7 +53,7 @@ export default class MqttClient {
     if (stringifyJson) {
       payload = JSON.stringify(payload) // eslint-disable-line no-param-reassign
     }
-
+    console.info("publishing topic",topic, "payload", payload, "retain", retain )
     return this.client.publishAsync(topic, payload, { retain, qos, ...options })
   }
 

@@ -1,3 +1,4 @@
+// works
 const { isEventOrCommand, isValidTopic, matchTopic } = require("../lib/mqtt/helpers")
 
 describe("Helpers", () => {

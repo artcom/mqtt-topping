@@ -19,17 +19,24 @@ export default class HttpClient {
   }
 
   query(query: Query): Promise<QueryResult> {
+    console.log("Query request:", query) // Log the query request
+
     return axios
       .post<any, AxiosResponse<QueryResult>>(`${this.uri}/query`, omitParseJson(query))
       .then(({ data }) => {
+        console.log("Raw query response data:", data) // Log the raw response data
+
         const { parseJson = true } = query
         if (parseJson) {
+          console.log("Before parsing payloads:", data) // Log before parsing
           parsePayloads(data)
+          console.log("After parsing payloads:", data) // Log after parsing
         }
 
         return data
       })
       .catch((error) => {
+        console.error("Query error:", error) // Log any errors
         if (error.response) {
           throw new Error(JSON.stringify(error.response.data))
         } else {

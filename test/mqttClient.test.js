@@ -1,3 +1,4 @@
+// fails
 const { delayUntil, delay } = require("./util")
 const { connectAsync, HttpClient, unpublishRecursively } = require("../lib/main")
 
@@ -132,6 +133,7 @@ describe("MQTT Client", () => {
       await mqttClient.subscribe(eventTopic, handler, { parseJson: false })
 
       await mqttClient.publish(eventTopic, "this is invalid JSON", { stringifyJson: false })
+      mqttClient.publish()
       await mqttClient.publish(eventTopic, "42", { stringifyJson: false })
 
       await delayUntil(() => handler.mock.calls.length === 2)

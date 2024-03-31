@@ -1,3 +1,4 @@
+// fails
 const { delay } = require("./util")
 const { connectAsync, HttpClient, unpublishRecursively } = require("../lib/main")
 

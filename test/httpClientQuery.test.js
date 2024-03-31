@@ -1,4 +1,5 @@
-const { delay } = require("./util")
+// fails
+const { delay, delayUntil } = require("./util")
 const { connectAsync, HttpClient, unpublishRecursively } = require("../lib/main")
 
 const tcpBrokerUri = process.env.TCP_BROKER_URI || "tcp://127.0.0.1"
@@ -21,7 +22,7 @@ describe("HTTP Query API", () => {
     await mqttClient.publish(`${testTopic}/more/two`, 2)
 
     // ensure that the publishes are processed on the server before testing
-    await delay(100)
+    await delay(1000)
   })
 
   afterEach(async () => {
