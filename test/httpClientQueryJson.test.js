@@ -8,6 +8,7 @@ describe("HTTP Query JSON API", () => {
   let mqttClient
   let httpClient
   let testTopic
+  const [major] = process.versions.node.split(".").map(Number)
 
   beforeEach(async () => {
     mqttClient = await connectAsync(tcpBrokerUri)
@@ -72,10 +73,16 @@ describe("HTTP Query JSON API", () => {
         )
       ))
 
-    test("should throw on invalid payloads", async () =>
-      expect(httpClient.queryJson(`${testTopic}/invalid`)).rejects.toThrow(
-        new Error("Unexpected token i in JSON at position 0")
-      ))
+    test("should throw on invalid payloads", async () => {
+      const invalidPayloadErrorMessage =
+        major >= 20
+          ? "Unexpected token 'i', \"invalid\" is not valid JSON"
+          : "Unexpected token i in JSON at position 0"
+
+      await expect(httpClient.queryJson(`${testTopic}/invalid`)).rejects.toThrow(
+        new Error(invalidPayloadErrorMessage)
+      )
+    })
 
     test("should throw for wildcard queries", () =>
       expect(httpClient.queryJson(`${testTopic}/valid/+`)).rejects.toThrow(
