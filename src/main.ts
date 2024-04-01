@@ -6,7 +6,7 @@ import { ClientOptions } from "./mqtt/types"
 export { default as HttpClient } from "./http/httpClient"
 export { unpublishRecursively } from "./utils"
 
-const KEEP_ALIVE = 3
+const KEEP_ALIVE = 30
 const CONNECT_TIMEOUT = 3000
 
 export function connect(uri: string, options: ClientOptions = {}): MqttClient {
