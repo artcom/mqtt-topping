@@ -8,6 +8,7 @@ describe("HTTP Query API", () => {
   let mqttClient
   let httpClient
   let testTopic
+  const [major] = process.versions.node.split(".").map(Number)
 
   beforeEach(async () => {
     mqttClient = await connectAsync(tcpBrokerUri)
@@ -136,16 +137,22 @@ describe("HTTP Query API", () => {
   })
 
   describe("JSON Parsing", () => {
+    const error =
+      major >= 20
+        ? "Unexpected token 'h', \"this is invalid JSON\" is not valid JSON"
+        : "Unexpected token h in JSON at position 1"
+
     beforeEach(async () => {
       await mqttClient.publish(`${testTopic}/invalid`, "this is invalid JSON", {
         stringifyJson: false,
       })
     })
 
-    test("should fail on invalid payloads", async () =>
-      expect(httpClient.query({ topic: `${testTopic}/invalid` })).rejects.toThrow(
-        new Error("Unexpected token h in JSON at position 1")
-      ))
+    test("should fail on invalid payloads", async () => {
+      await expect(httpClient.query({ topic: `${testTopic}/invalid` })).rejects.toThrow(
+        new Error(error)
+      )
+    })
 
     test("should represent errors in batch queries", async () => {
       const response = await httpClient.queryBatch([
@@ -157,7 +164,7 @@ describe("HTTP Query API", () => {
         { topic: `${testTopic}/foo`, payload: "bar" },
         new Error(
           JSON.stringify({
-            error: "Unexpected token h in JSON at position 1",
+            error,
             topic: `${testTopic}/invalid`,
           })
         ),
