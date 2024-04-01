@@ -37,7 +37,7 @@ export default class MqttClient {
   publish(
     topic: string,
     payload: any,
-    publishOptions: PublishOptions = {}
+    publishOptions: PublishOptions = {},
   ): Promise<Packet | undefined> {
     const {
       qos = 2,
@@ -64,7 +64,7 @@ export default class MqttClient {
   subscribe(
     topic: string,
     callback: MessageCallback,
-    subscribeOptions: SubscribeOptions = { qos: 2 }
+    subscribeOptions: SubscribeOptions = { qos: 2 },
   ): Promise<ISubscriptionGrant[]> {
     const { qos = 2, parseJson = true, ...options } = subscribeOptions
 
@@ -79,12 +79,12 @@ export default class MqttClient {
 
   unsubscribe(
     topic: string,
-    callback: MessageCallback
+    callback: MessageCallback,
   ): Promise<void> | Promise<Packet | undefined> {
     const subscription = this.subscriptions[topic]
     if (subscription) {
       subscription.handlers = subscription.handlers.filter(
-        (handler) => handler.callback !== callback
+        (handler) => handler.callback !== callback,
       )
 
       if (subscription.handlers.length === 0) {
@@ -116,7 +116,7 @@ export default class MqttClient {
         const subscription = this.subscriptions[key]
         return subscription.matchTopic(topic) ? [...handlers, ...subscription.handlers] : handlers
       },
-      []
+      [],
     )
 
     matchingHandlers.forEach(({ callback, parseJson }) => {

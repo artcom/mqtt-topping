@@ -69,8 +69,8 @@ describe("HTTP Query JSON API", () => {
             topic: `${testTopic}/does-not-exist`,
           }),
           null,
-          2
-        )
+          2,
+        ),
       ))
 
     test("should throw on invalid payloads", async () => {
@@ -80,13 +80,13 @@ describe("HTTP Query JSON API", () => {
           : "Unexpected token i in JSON at position 0"
 
       await expect(httpClient.queryJson(`${testTopic}/invalid`)).rejects.toThrow(
-        new Error(invalidPayloadErrorMessage)
+        new Error(invalidPayloadErrorMessage),
       )
     })
 
     test("should throw for wildcard queries", () =>
       expect(httpClient.queryJson(`${testTopic}/valid/+`)).rejects.toThrow(
-        new Error("Wildcards are not supported in queryJson().")
+        new Error("Wildcards are not supported in queryJson()."),
       ))
   })
 
@@ -110,7 +110,7 @@ describe("HTTP Query JSON API", () => {
 
     test("should throw for wildcard queries", async () =>
       expect(
-        httpClient.queryJsonBatch([`${testTopic}/valid/+`, `${testTopic}/valid/nested1`])
+        httpClient.queryJsonBatch([`${testTopic}/valid/+`, `${testTopic}/valid/nested1`]),
       ).rejects.toThrow(new Error("Wildcards are not supported in queryJson().")))
 
     test("should include errors for non-existing topics", async () => {

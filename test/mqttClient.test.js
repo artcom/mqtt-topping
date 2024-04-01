@@ -234,7 +234,7 @@ describe("MQTT Client", () => {
       await unpublishRecursively(mqttClient, httpClient, testTopic)
 
       return expect(httpClient.query({ topic: testTopic })).rejects.toThrow(
-        new Error(JSON.stringify({ error: 404, topic: testTopic }))
+        new Error(JSON.stringify({ error: 404, topic: testTopic })),
       )
     })
   })

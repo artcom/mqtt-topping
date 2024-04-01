@@ -105,8 +105,8 @@ describe("HTTP Query API", () => {
           JSON.stringify({
             error: 404,
             topic: `${testTopic}/does-not-exist`,
-          })
-        )
+          }),
+        ),
       ))
   })
 
@@ -150,7 +150,7 @@ describe("HTTP Query API", () => {
 
     test("should fail on invalid payloads", async () => {
       await expect(httpClient.query({ topic: `${testTopic}/invalid` })).rejects.toThrow(
-        new Error(error)
+        new Error(error),
       )
     })
 
@@ -166,7 +166,7 @@ describe("HTTP Query API", () => {
           JSON.stringify({
             error,
             topic: `${testTopic}/invalid`,
-          })
+          }),
         ),
       ])
     })
