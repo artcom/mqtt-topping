@@ -28,7 +28,7 @@
   "scripts": {
     "build": "tsdown",
     "format": "prettier --write .",
-    "lint": "eslint src tests --ext .ts",
+    "lint": "eslint src tests",
     "prepublishOnly": "npm run lint && npm test && npm run build",
     "test": "jest",
     "type-check": "tsc --noEmit",
