@@ -3,5 +3,4 @@ export default {
   transform: {
     "^.+\\.tsx?$": "ts-jest",
   },
-  setupFilesAfterEnv: ["jest-fetch-mock"],
 }

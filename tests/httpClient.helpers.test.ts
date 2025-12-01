@@ -1,6 +1,3 @@
-import { enableFetchMocks } from "jest-fetch-mock"
-enableFetchMocks()
-
 import * as helpers from "../src/http/helpers"
 import { TopicResult, FlatTopicResult } from "../src/http/types"
 import { HttpQueryError, HttpPayloadParseError } from "../src/errors"

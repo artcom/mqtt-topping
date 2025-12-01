@@ -1,6 +1,5 @@
-import { enableFetchMocks } from "jest-fetch-mock"
-enableFetchMocks()
-
+import fetchMock from "jest-fetch-mock"
+fetchMock.enableMocks()
 import { HttpClient } from "../src/http/httpClient"
 import * as helpers from "../src/http/helpers"
 import { TopicResult, BatchQueryResponse } from "../src/http/types"
