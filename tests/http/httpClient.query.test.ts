@@ -1,21 +1,21 @@
 import fetchMock from "jest-fetch-mock"
 fetchMock.enableMocks()
-import { HttpClient } from "../src/http/httpClient"
-import * as helpers from "../src/http/helpers"
+import { HttpClient } from "../../src/http/httpClient"
+import * as helpers from "../../src/http/helpers"
 import {
   Query,
   TopicResult,
   BatchQueryResponse,
   ErrorResult,
-} from "../src/http/types"
+} from "../../src/http/types"
 import {
   HttpPayloadParseError,
   HttpRequestError,
   HttpTimeoutError,
   HttpNetworkError,
   HttpServerError,
-} from "../src/errors"
-import { HTTP_REQUEST_TIMEOUT } from "../src/defaults"
+} from "../../src/errors"
+import { HTTP_REQUEST_TIMEOUT } from "../../src/defaults"
 
 describe("HttpClient - Query Operations", () => {
   let httpClient: HttpClient

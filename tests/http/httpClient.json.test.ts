@@ -1,13 +1,13 @@
 import fetchMock from "jest-fetch-mock"
 fetchMock.enableMocks()
-import { HttpClient } from "../src/http/httpClient"
-import * as helpers from "../src/http/helpers"
-import { TopicResult, BatchQueryResponse } from "../src/http/types"
+import { HttpClient } from "../../src/http/httpClient"
+import * as helpers from "../../src/http/helpers"
+import { TopicResult, BatchQueryResponse } from "../../src/http/types"
 import {
   HttpQueryError,
   HttpProcessingError,
   HttpServerError,
-} from "../src/errors"
+} from "../../src/errors"
 
 describe("HttpClient - JSON Operations", () => {
   let httpClient: HttpClient

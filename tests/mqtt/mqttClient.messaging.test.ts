@@ -1,5 +1,5 @@
 import { Packet } from "mqtt"
-import { MqttClient } from "../src"
+import { MqttClient } from "../../src"
 import * as mqtt from "mqtt"
 
 const connectMock = jest.mocked(mqtt.connectAsync)

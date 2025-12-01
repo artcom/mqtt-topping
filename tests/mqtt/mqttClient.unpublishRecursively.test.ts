@@ -1,7 +1,7 @@
-import { MqttClient } from "../src"
-import { HttpClient } from "../src/http/httpClient"
+import { MqttClient } from "../../src"
+import { HttpClient } from "../../src/http/httpClient"
 import * as mqtt from "mqtt"
-import { FlatTopicResult } from "../src/http/types"
+import { FlatTopicResult } from "../../src/http/types"
 
 const connectMock = jest.mocked(mqtt.connectAsync)
 

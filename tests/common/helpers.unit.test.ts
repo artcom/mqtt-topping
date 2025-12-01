@@ -5,9 +5,9 @@ import {
   processHandlersForTopic,
   parsePayload,
   createClientId,
-} from "../src/mqtt/helpers"
-import { InvalidTopicError } from "../src/errors" // Adjusted import path if moved
-import type { SubscriptionHandler } from "../src/mqtt/types" // Keep type import
+} from "../../src/mqtt/helpers"
+import { InvalidTopicError } from "../../src/errors" // Adjusted import path if moved
+import type { SubscriptionHandler } from "../../src/mqtt/types" // Keep type import
 import { Packet } from "mqtt"
 
 describe("MQTT Helper Functions", () => {

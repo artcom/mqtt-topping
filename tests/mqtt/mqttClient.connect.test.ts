@@ -1,8 +1,8 @@
-import { MqttClient } from "../src"
-import { ClientOptions } from "../src/mqtt/types"
-import { processOptions } from "../src/mqtt/helpers"
+import { MqttClient } from "../../src"
+import { ClientOptions } from "../../src/mqtt/types"
+import { processOptions } from "../../src/mqtt/helpers"
 import * as mqtt from "mqtt"
-import { MqttConnectionError, MqttUsageError } from "../src/errors"
+import { MqttConnectionError, MqttUsageError } from "../../src/errors"
 
 const connectMock = jest.mocked(mqtt.connectAsync)
 

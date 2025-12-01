@@ -1,6 +1,6 @@
-import * as helpers from "../src/http/helpers"
-import { TopicResult, FlatTopicResult } from "../src/http/types"
-import { HttpQueryError, HttpPayloadParseError } from "../src/errors"
+import * as helpers from "../../src/http/helpers"
+import { TopicResult, FlatTopicResult } from "../../src/http/types"
+import { HttpQueryError, HttpPayloadParseError } from "../../src/errors"
 
 describe("HTTP Module - Helper Functions", () => {
   it("makeJsonQuery should create a proper query object", () => {
