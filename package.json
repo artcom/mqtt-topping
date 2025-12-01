@@ -1,6 +1,6 @@
 {
   "name": "@artcom/mqtt-topping",
-  "version": "4.0.2",
+  "version": "4.0.3",
   "description": "A TypeScript wrapper for MQTT.js with payload parsing, multi-handlers, and an HTTP query client.",
   "license": "MIT",
   "author": "ART+COM GmbH",
