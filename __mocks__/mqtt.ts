@@ -1,28 +1,63 @@
-// @ts-nocheck
+import { Packet, MqttClient } from "mqtt"
+
+type PacketCallback = (error?: Error | null, packet?: Packet) => void
+type ClientSubscribeCallback = (err: Error | null, granted: unknown[]) => void
+
 export const MqttClientMock: jest.Mocked<Partial<MqttClient>> = {
-  publish: jest.fn().mockImplementation((_msg: any, _opts: any, cb: any) => {
-    cb?.(undefined, {} as Packet);
-    return MqttClientMock;
-  }),
-  subscribe: jest.fn().mockImplementation((_topic: any, _optsOrCb: any, maybeCb: any) => {
-    if (typeof _optsOrCb === "function") {
-      _optsOrCb(undefined, {} as Packet);
-    } else {
-      maybeCb?.(undefined, {} as Packet);
-    }
-    return MqttClientMock;
-  }),
+  publish: jest
+    .fn()
+    .mockImplementation(
+      (
+        _topic: string,
+        _message: string | Buffer,
+        _optsOrCb?: object | PacketCallback,
+        _cb?: PacketCallback,
+      ) => {
+        let callback: PacketCallback | undefined
+        if (typeof _optsOrCb === "function") {
+          callback = _optsOrCb as PacketCallback
+        } else if (typeof _cb === "function") {
+          callback = _cb
+        }
+        callback?.(null, {} as Packet)
+        return MqttClientMock
+      },
+    ),
+  subscribe: jest
+    .fn()
+    .mockImplementation(
+      (
+        _topic: string | string[],
+        _optsOrCb: object | ClientSubscribeCallback,
+        maybeCb?: ClientSubscribeCallback,
+      ) => {
+        if (typeof _optsOrCb === "function") {
+          ;(_optsOrCb as ClientSubscribeCallback)(null, [])
+        } else {
+          maybeCb?.(null, [])
+        }
+        return MqttClientMock
+      },
+    ),
   subscribeAsync: jest.fn().mockImplementation(() => {
-    return Promise.resolve({} as Packet);
+    return Promise.resolve([] as unknown[])
   }),
-  unsubscribe: jest.fn().mockImplementation((_topic: any, _cbOrOpts: any, maybeCb: any) => {
-    if (typeof _cbOrOpts === "function") {
-      _cbOrOpts(undefined, {} as Packet);
-    } else {
-      maybeCb?.(undefined, {} as Packet);
-    }
-    return MqttClientMock;
-  }),
+  unsubscribe: jest
+    .fn()
+    .mockImplementation(
+      (
+        _topic: string | string[],
+        _optsOrCb: object | PacketCallback,
+        maybeCb?: PacketCallback,
+      ) => {
+        if (typeof _optsOrCb === "function") {
+          ;(_optsOrCb as PacketCallback)(null, {} as Packet)
+        } else {
+          maybeCb?.(null, {} as Packet)
+        }
+        return MqttClientMock
+      },
+    ),
   unsubscribeAsync: jest.fn().mockResolvedValue({} as Packet),
   publishAsync: jest.fn().mockResolvedValue({} as Packet),
   endAsync: jest.fn().mockResolvedValue(undefined),
@@ -32,10 +67,8 @@ export const MqttClientMock: jest.Mocked<Partial<MqttClient>> = {
   end: jest.fn(),
   connected: false,
   reconnecting: false,
-};
+}
 
-export const connectAsync = jest
-  .fn()
-  .mockImplementation((): MqttClient => {
-    return MqttClientMock as unknown as MqttClient; // Cast needed because the mock is partial and wrapped by Jest
-  })
+export const connectAsync = jest.fn().mockImplementation((): MqttClient => {
+  return MqttClientMock as unknown as MqttClient // Cast needed because the mock is partial and wrapped by Jest
+})
