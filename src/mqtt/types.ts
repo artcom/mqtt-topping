@@ -1,26 +1,61 @@
-import { IClientOptions, IClientPublishOptions, IClientSubscribeOptions, Packet } from "mqtt"
+import {
+  Packet,
+  IClientOptions,
+  IClientSubscribeProperties,
+  IClientUnsubscribeProperties,
+} from "mqtt"
 
-export declare type QoS = 0 | 1 | 2
+import type { QoS } from "mqtt-packet"
+export type PayloadParseType = "json" | "string" | "buffer" | "custom"
 
-export type ErrorCallback = (payload: Buffer, topic: string) => void
+// Type mapping for payload based on parseType
+export type PayloadType<T extends PayloadParseType> = T extends "buffer"
+  ? Buffer
+  : T extends "string"
+    ? string
+    : T extends "json"
+      ? unknown // JSON can be any valid JSON value
+      : T extends "custom"
+        ? unknown // Custom parser can return anything
+        : unknown
+
+export type PublishPayloadParseType = Exclude<PayloadParseType, "custom">
+
+export type MqttResult = {
+  packet: Packet
+}
 
 export interface ClientOptions extends IClientOptions {
   appId?: string
   deviceId?: string
-  will?: IClientOptions["will"] & { stringifyJson: boolean; payload: any }
-  onParseError?: ErrorCallback
+  will?: IClientOptions["will"] & {
+    stringifyJson: boolean
+    payload: unknown // Let MQTT.js handle the type
+  }
 }
 
-export interface PublishOptions extends IClientPublishOptions {
-  stringifyJson?: boolean
+export type MessageCallback = (
+  payload: Buffer | string | unknown,
+  topic: string,
+  packet: Packet,
+) => void
+
+export interface SubscriptionHandler {
+  callback: MessageCallback
+  qos: QoS
+  parseType?: PayloadParseType
+  customParser?: (payload: unknown) => unknown
 }
 
-export interface SubscribeOptions extends IClientSubscribeOptions {
-  parseJson?: boolean
+export interface SubscribeOptions extends IClientSubscribeProperties {
+  qos?: QoS
+  parseType?: PayloadParseType
+  customParser?: (payload: unknown) => unknown
 }
 
-export type MessageCallback = (payload: any, topic: string, packet: Packet) => void
-export type TopicMatcher = (topic: string) => boolean
-export type SubscriptionHandler = { callback: MessageCallback; qos: QoS; parseJson: boolean }
-export type Subscription = { matchTopic: TopicMatcher; handlers: SubscriptionHandler[] }
-export type Subscriptions = { [topic: string]: Subscription }
+export interface PublishOptions extends IClientUnsubscribeProperties {
+  qos?: QoS
+  retain?: boolean
+  parseType?: PublishPayloadParseType
+  customParser?: (payload: unknown) => string | Buffer
+}

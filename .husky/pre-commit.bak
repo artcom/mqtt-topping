@@ -1,0 +1,10 @@
+# Run linters & formatters on staged files first
+echo "Running lint-staged..."
+npx lint-staged || exit 1 # Exit if lint-staged fails
+
+# If lint-staged passed, run tests
+echo "Running tests..."
+npm test || exit 1 # Exit if tests fail
+
+# If both passed, the commit will proceed
+exit 0

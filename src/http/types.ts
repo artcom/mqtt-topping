@@ -1,10 +1,40 @@
-export type Query = { topic: string; depth?: number; flatten?: boolean; parseJson?: boolean }
+export interface HttpClientOptions {
+  requestTimeoutMs?: number
+}
 
-export type TopicResult = { topic: string; payload?: any; children?: Array<TopicResult> }
-export type FlatTopicResult = { topic: string; payload?: any }
-export type ErrorResult = { topic: string; error: any }
+export interface Query {
+  topic: string
+  depth?: number
+  flatten?: boolean
+  parseJson?: boolean
+}
 
-export type QueryResult = TopicResult | FlatTopicResult[]
-export type BatchQueryResponse = Array<TopicResult | FlatTopicResult[] | ErrorResult>
-export type BatchQueryResult = Array<TopicResult | FlatTopicResult[] | Error>
-export type JsonResult = any
+export interface TopicResult<P = unknown> {
+  topic: string
+  payload?: P
+  children?: Array<TopicResult<P>>
+}
+
+export interface FlatTopicResult<P = unknown> {
+  topic: string
+  payload?: P
+}
+
+export interface ErrorResult<E = unknown> {
+  topic: string
+  error: E
+}
+
+export type QueryResult<P = unknown> =
+  | TopicResult<P>
+  | Array<FlatTopicResult<P>>
+
+export type BatchQueryResponse<P = unknown, E = unknown> = Array<
+  TopicResult<P> | FlatTopicResult<P>[] | ErrorResult<E>
+>
+
+export type BatchQueryResult<P = unknown, E = unknown> = Array<
+  TopicResult<P> | FlatTopicResult<P>[] | ErrorResult<E> | Error
+>
+
+export type JsonResult = unknown

@@ -1,139 +1,140 @@
-import axios, { AxiosResponse } from "axios"
-
 import {
   Query,
   TopicResult,
   FlatTopicResult,
   QueryResult,
-  ErrorResult,
   BatchQueryResult,
   JsonResult,
   BatchQueryResponse,
+  ErrorResult,
+  HttpClientOptions,
 } from "./types"
+import { HttpError, HttpServerError, HttpProcessingError } from "../errors"
+import {
+  omitParseJson,
+  makeJsonQuery,
+  makeObject,
+  parsePayloads,
+  post,
+} from "./helpers"
+import { HTTP_REQUEST_TIMEOUT } from "../defaults"
 
-export default class HttpClient {
-  uri: string
+export class HttpClient {
+  private readonly requestTimeoutMs: number
 
-  constructor(uri: string) {
-    this.uri = uri
+  constructor(
+    private readonly baseUrl: string,
+    options?: HttpClientOptions,
+  ) {
+    this.requestTimeoutMs = options?.requestTimeoutMs ?? HTTP_REQUEST_TIMEOUT
   }
 
-  query(query: Query): Promise<QueryResult> {
-    return axios
-      .post<any, AxiosResponse<QueryResult>>(`${this.uri}/query`, omitParseJson(query))
-      .then(({ data }) => {
-        const { parseJson = true } = query
+  public async query(query: Query): Promise<QueryResult> {
+    const response = await post<QueryResult>(
+      this.baseUrl,
+      "/query",
+      omitParseJson(query),
+      this.requestTimeoutMs,
+    )
+
+    if (query.parseJson !== false) {
+      parsePayloads(response, query.topic)
+    }
+    return response
+  }
+
+  public async queryBatch(queries: Query[]): Promise<BatchQueryResult> {
+    const requestData = queries.map((q) => omitParseJson(q))
+    const responses = await post<BatchQueryResponse>(
+      this.baseUrl,
+      "/query",
+      requestData,
+      this.requestTimeoutMs,
+    )
+
+    return responses.map((result, index) => {
+      const originalQuery = queries[index]
+      const { topic, parseJson = true } = originalQuery
+
+      try {
+        if (
+          result &&
+          typeof result === "object" &&
+          "error" in result &&
+          result.error
+        ) {
+          return new HttpServerError(result.topic ?? topic, result.error)
+        }
+
         if (parseJson) {
-          parsePayloads(data)
+          parsePayloads(result, topic)
         }
 
-        return data
-      })
-      .catch((error) => {
-        if (error.response) {
-          throw new Error(JSON.stringify(error.response.data))
+        return result as TopicResult | FlatTopicResult[]
+      } catch (processError) {
+        if (processError instanceof HttpError) {
+          return processError
         } else {
-          throw new Error(error.message)
+          return new HttpProcessingError(
+            `Failed to process batch result for topic ${topic}: ${processError instanceof Error ? processError.message : String(processError)}`,
+            { cause: processError, topic: topic },
+          )
         }
-      })
+      }
+    })
   }
 
-  queryBatch(queries: Query[]): Promise<BatchQueryResult> {
-    return axios
-      .post<any, AxiosResponse<BatchQueryResponse>>(`${this.uri}/query`, queries.map(omitParseJson))
-      .then(({ data }) =>
-        data.map((result: TopicResult | FlatTopicResult[] | ErrorResult, index: number) => {
-          const { topic, parseJson = true } = queries[index]
-
-          if ("error" in result && result.error) {
-            return new Error(JSON.stringify(result))
-          } else {
-            if (parseJson) {
-              try {
-                parsePayloads(result)
-              } catch (error: any) {
-                return new Error(JSON.stringify({ error: error.message, topic }))
-              }
-            }
-          }
-
-          return result
-        }),
-      )
-  }
-
-  async queryJson(topic: string): Promise<JsonResult> {
+  public async queryJson(topic: string): Promise<JsonResult> {
     const jsonQuery = makeJsonQuery(topic)
 
     const result = await this.query(jsonQuery)
+
+    if (Array.isArray(result)) {
+      throw new HttpProcessingError(
+        `Unexpected array result for non-wildcard queryJson: ${topic}`,
+        { topic: topic },
+      )
+    }
+    if (result && typeof result === "object" && "error" in result) {
+      throw new HttpServerError(topic, (result as ErrorResult).error)
+    }
+
     return makeObject(result as TopicResult)
   }
 
-  async queryJsonBatch(topics: string[]): Promise<JsonResult> {
-    const jsonQueries = topics.map(makeJsonQuery)
+  public async queryJsonBatch(
+    topics: string[],
+  ): Promise<Array<JsonResult | HttpError>> {
+    const jsonQueries = topics.map((t) => makeJsonQuery(t))
 
-    const results = (await this.queryBatch(jsonQueries)) as Array<TopicResult | Error>
-    return results.map((result) => {
-      if (result instanceof Error) {
+    const results = await this.queryBatch(jsonQueries)
+
+    return results.map((result, index) => {
+      const topic = topics[index]
+
+      if (result instanceof HttpError) {
         return result
       }
 
+      if (Array.isArray(result)) {
+        return new HttpProcessingError(
+          `Unexpected array result in queryJsonBatch for topic ${topic}`,
+          { topic },
+        )
+      }
+
       try {
-        return makeObject(result)
-      } catch (error) {
-        return {
-          topic: result.topic,
-          error,
+        return makeObject(result as TopicResult)
+      } catch (processingError) {
+        if (processingError instanceof HttpError) {
+          return processingError
+        } else {
+          return new HttpProcessingError(
+            `Failed makeObject for topic ${topic}: ${processingError instanceof Error ? processingError.message : String(processingError)}`,
+            { cause: processingError, topic: topic },
+          )
         }
       }
     })
-  }
-}
-
-function makeJsonQuery(topic: string): Query {
-  if (topic.includes("+")) {
-    throw new Error("Wildcards are not supported in queryJson().")
-  }
-
-  return { topic, depth: -1, parseJson: false, flatten: false }
-}
-
-function makeObject(result: TopicResult): JsonResult {
-  if (result.children) {
-    const object: JsonResult = {}
-
-    result.children.forEach((child) => {
-      const key = child.topic.split("/").pop() as string
-      object[key] = makeObject(child)
-    })
-
-    return object
-  }
-
-  return JSON.parse(result.payload)
-}
-
-function omitParseJson(query: Query): Query {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { parseJson, ...rest } = query
-  return rest
-}
-
-function parsePayloads(result: TopicResult | FlatTopicResult[]): void {
-  if (Array.isArray(result)) {
-    result.forEach(parsePayloads)
-  } else {
-    return parsePayload(result)
-  }
-}
-
-function parsePayload(result: TopicResult | FlatTopicResult): void {
-  if (result.payload) {
-    result.payload = JSON.parse(result.payload) // eslint-disable-line no-param-reassign
-  }
-
-  // check for "children" first to ensure it is a TopicResult
-  if ("children" in result && result.children) {
-    result.children.map(parsePayloads)
   }
 }

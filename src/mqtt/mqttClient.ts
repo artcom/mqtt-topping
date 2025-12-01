@@ -1,146 +1,457 @@
-import { MqttClient as Mqtt, Packet, ISubscriptionGrant } from "mqtt"
+import * as mqtt from "mqtt"
+import type {
+  MqttClient as MqttJsClient,
+  Packet,
+  IClientUnsubscribeProperties,
+} from "mqtt"
 
-import { isEventOrCommand, isValidTopic, matchTopic } from "./helpers"
+// Universal import handling for both ESM (Vite) and CJS (Jest)
+// @ts-expect-error - Handle potential default export difference
+const mqttModule = mqtt.default || mqtt
+const { connectAsync } = mqttModule
 import {
-  MessageCallback,
   SubscribeOptions,
-  Subscriptions,
   PublishOptions,
   SubscriptionHandler,
-  ErrorCallback,
-  QoS,
+  MessageCallback,
+  ClientOptions,
+  MqttResult,
 } from "./types"
 
-export default class MqttClient {
-  client: Mqtt
-  on: Mqtt["on"]
-  once: Mqtt["once"]
+import { QoS } from "mqtt-packet"
 
-  private onParseError?: ErrorCallback
-  private subscriptions: Subscriptions
+import { HttpClient } from "../http/httpClient"
+import { FlatTopicResult } from "../http/types"
 
-  constructor(client: Mqtt, onParseError?: ErrorCallback) {
-    this.client = client
-    this.onParseError = onParseError
+import {
+  MqttConnectionError,
+  MqttSubscribeError,
+  MqttUnsubscribeError,
+  MqttPublishError,
+  MqttPayloadError,
+  MqttUsageError,
+  MqttDisconnectError,
+  InvalidTopicError,
+} from "../errors"
+import {
+  matchTopic,
+  isEventOrCommand,
+  processOptions,
+  validateTopic,
+  processHandlersForTopic,
+  validateTopicForPublish,
+} from "./helpers"
+import { QUALITY_OF_SERVICE, DEFAULT_PARSE_TYPE } from "../defaults"
 
+export interface UnpublishRecursivelyOptions {
+  batchSize?: number
+  delayMs?: number
+}
+
+export class MqttClient {
+  public readonly underlyingClient: MqttJsClient
+  private readonly subscriptions: Record<
+    string,
+    { handlers: SubscriptionHandler[] }
+  >
+  private messageHandler: (
+    topic: string,
+    payload: Buffer | Uint8Array, // MQTT.js provides Buffer in Node.js, Uint8Array in browser
+    packet: Packet,
+  ) => void
+
+  private constructor(private readonly client: MqttJsClient) {
+    this.underlyingClient = client
     this.subscriptions = {}
-    this.on = this.client.on.bind(this.client)
-    this.once = this.client.once.bind(this.client)
-    this.client.on("message", this.handleMessage.bind(this))
+
+    this.messageHandler = (topic, payload, packet) => {
+      this._handleMessage(topic, payload, packet)
+    }
+    this.client.on("message", this.messageHandler)
   }
 
-  disconnect(force: boolean): Promise<void> {
-    return this.client.endAsync(force)
-  }
-
-  // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-  publish(
-    topic: string,
-    payload: any,
-    publishOptions: PublishOptions = {},
-  ): Promise<Packet | undefined> {
-    const {
-      qos = 2,
-      stringifyJson = true,
-      retain = !isEventOrCommand(topic),
-      ...options
-    } = publishOptions
-
-    if (!isValidTopic(topic)) {
-      throw new Error(`Invalid topic: ${topic}`)
+  public static async connect(
+    uri: string,
+    options: ClientOptions = {},
+  ): Promise<MqttClient> {
+    if (!uri) {
+      throw new MqttUsageError("MQTT broker URI is required")
     }
 
-    if (stringifyJson) {
-      payload = JSON.stringify(payload) // eslint-disable-line no-param-reassign
+    if (
+      uri.startsWith("ws:") ||
+      uri.startsWith("wss:") ||
+      uri.startsWith("http:") ||
+      uri.startsWith("https:")
+    ) {
+      try {
+        new URL(uri)
+      } catch (error) {
+        throw new MqttUsageError(
+          `Invalid MQTT broker URI format for web-based scheme: ${uri}`,
+          {
+            cause: error,
+          },
+        )
+      }
     }
 
-    return this.client.publishAsync(topic, payload, { retain, qos, ...options })
-  }
+    const { finalOptions } = processOptions(options)
 
-  unpublish(topic: string, qos: QoS = 2): Promise<void> | Promise<Packet | undefined> {
-    return this.publish(topic, "", { qos, retain: true, stringifyJson: false })
-  }
-
-  subscribe(
-    topic: string,
-    callback: MessageCallback,
-    subscribeOptions: SubscribeOptions = { qos: 2 },
-  ): Promise<ISubscriptionGrant[]> {
-    const { qos = 2, parseJson = true, ...options } = subscribeOptions
-
-    if (!this.subscriptions[topic]) {
-      this.subscriptions[topic] = { matchTopic: matchTopic(topic), handlers: [] }
+    try {
+      const mqttClient = await connectAsync(uri, finalOptions)
+      return new MqttClient(mqttClient)
+    } catch (error) {
+      console.error(`Failed to connect to MQTT broker at ${uri}:`, error)
+      throw new MqttConnectionError(
+        error instanceof Error ? error.message : String(error),
+        { cause: error },
+      )
     }
-
-    this.subscriptions[topic].handlers.push({ callback, qos, parseJson })
-
-    return this.client.subscribeAsync(topic, { qos, ...options })
   }
 
-  unsubscribe(
+  public async subscribe(
     topic: string,
     callback: MessageCallback,
-  ): Promise<void> | Promise<Packet | undefined> {
+    opts?: SubscribeOptions,
+  ): Promise<void> {
+    validateTopic(topic)
+
+    if (!callback || typeof callback !== "function") {
+      throw new MqttUsageError("subscribe requires a valid callback function")
+    }
+
+    const parseType = opts?.parseType ?? DEFAULT_PARSE_TYPE
+    const qos = opts?.qos ?? QUALITY_OF_SERVICE
+
+    try {
+      let needsBrokerSubscribe = false
+      if (!this.subscriptions[topic]) {
+        this.subscriptions[topic] = { handlers: [] }
+        needsBrokerSubscribe = true
+      }
+
+      const handlerExists = this.subscriptions[topic].handlers.some(
+        (handler) => handler.callback === callback,
+      )
+
+      if (handlerExists) {
+        this.subscriptions[topic].handlers = this.subscriptions[
+          topic
+        ].handlers.map((handler) =>
+          handler.callback === callback
+            ? { ...handler, qos, parseType, customParser: opts?.customParser }
+            : handler,
+        )
+      } else {
+        this.subscriptions[topic].handlers.push({
+          callback,
+          qos,
+          parseType,
+          customParser: opts?.customParser,
+        })
+
+        if (needsBrokerSubscribe) {
+          const subscribeOptions = {
+            qos: qos,
+            ...(opts?.properties ? { properties: opts.properties } : {}),
+          }
+          await this.client.subscribeAsync(topic, subscribeOptions)
+        }
+      }
+    } catch (error) {
+      if (this.subscriptions[topic]) {
+        this.subscriptions[topic].handlers = this.subscriptions[
+          topic
+        ].handlers.filter((h) => h.callback !== callback)
+
+        if (this.subscriptions[topic].handlers.length === 0) {
+          delete this.subscriptions[topic]
+        }
+      }
+
+      throw new MqttSubscribeError(
+        topic,
+        error instanceof Error ? error.message : String(error),
+        { cause: error },
+      )
+    }
+  }
+
+  public async unsubscribe(
+    topic: string,
+    callback: MessageCallback,
+    opts?: IClientUnsubscribeProperties,
+  ): Promise<MqttResult | void> {
+    validateTopic(topic)
+
+    if (!callback || typeof callback !== "function") {
+      throw new MqttUsageError("unsubscribe requires a valid callback function")
+    }
+
     const subscription = this.subscriptions[topic]
-    if (subscription) {
+    if (!subscription) {
+      return
+    }
+
+    try {
+      const originalHandlerCount = subscription.handlers.length
       subscription.handlers = subscription.handlers.filter(
         (handler) => handler.callback !== callback,
       )
 
+      if (subscription.handlers.length === originalHandlerCount) {
+        return
+      }
+
       if (subscription.handlers.length === 0) {
         delete this.subscriptions[topic]
-        return this.client.unsubscribeAsync(topic)
-      }
-    }
 
-    return Promise.resolve()
+        const packet = await this.client.unsubscribeAsync(
+          topic,
+          opts || { properties: undefined },
+        )
+
+        return packet ? { packet } : undefined
+      }
+    } catch (error) {
+      throw new MqttUnsubscribeError(
+        topic,
+        error instanceof Error ? error.message : String(error),
+        { cause: error },
+      )
+    }
   }
 
-  forceUnsubscribe(topic: string): Promise<void> | Promise<Packet | undefined> {
+  public async forceUnsubscribe(
+    topic: string,
+    opts?: IClientUnsubscribeProperties,
+  ): Promise<MqttResult | void> {
+    validateTopic(topic)
+
     const subscription = this.subscriptions[topic]
-    if (subscription) {
-      delete this.subscriptions[topic]
-      this.client.unsubscribeAsync(topic)
-      return this.client.unsubscribeAsync(topic)
+    if (!subscription) {
+      return
     }
 
-    return Promise.resolve()
+    try {
+      delete this.subscriptions[topic]
+
+      const packet = await this.client.unsubscribeAsync(
+        topic,
+        opts || { properties: undefined },
+      )
+
+      return packet ? { packet } : undefined
+    } catch (error) {
+      throw new MqttUnsubscribeError(
+        topic,
+        `forceUnsubscribe failed: ${error instanceof Error ? error.message : String(error)}`,
+        { cause: error },
+      )
+    }
+  }
+  public async publish(
+    topic: string,
+    data: unknown,
+    opts?: PublishOptions,
+  ): Promise<MqttResult | void> {
+    validateTopicForPublish(topic)
+
+    const qos = opts?.qos ?? QUALITY_OF_SERVICE
+    const retain = opts?.retain ?? !isEventOrCommand(topic)
+    let payload: string | Buffer | undefined
+
+    try {
+      const parseType = opts?.parseType ?? DEFAULT_PARSE_TYPE
+
+      switch (parseType) {
+        case "buffer":
+          if (typeof Buffer !== "undefined") {
+            payload = Buffer.isBuffer(data) ? data : Buffer.from(String(data))
+          } else {
+            payload = String(data)
+          }
+          break
+        case "string":
+          payload = String(data)
+          break
+        case "json":
+        default:
+          try {
+            if (data === undefined) {
+              payload = ""
+            } else {
+              payload = JSON.stringify(data)
+            }
+          } catch (jsonError) {
+            throw new MqttPayloadError(
+              `Failed to JSON stringify payload: ${jsonError instanceof Error ? jsonError.message : String(jsonError)}`,
+              { cause: jsonError, topic: topic, rawPayload: data },
+            )
+          }
+          break
+      }
+
+      const packet = await this.client.publishAsync(topic, payload, {
+        qos,
+        retain,
+        ...(opts?.properties ? { properties: opts.properties } : {}),
+      })
+      return packet ? { packet } : undefined
+    } catch (error) {
+      if (
+        error instanceof MqttPayloadError ||
+        error instanceof MqttUsageError ||
+        error instanceof InvalidTopicError
+      ) {
+        throw error
+      }
+
+      throw new MqttPublishError(
+        topic,
+        error instanceof Error ? error.message : String(error),
+        { cause: error },
+      )
+    }
   }
 
-  handleMessage(topic: string, payload: Buffer, packet: Packet): void {
-    const [success, json] = parsePayload(payload)
-    let logParseError = false
+  public async unpublishRecursively(
+    topic: string,
+    httpClient: HttpClient,
+    options?: UnpublishRecursivelyOptions,
+  ): Promise<void> {
+    validateTopicForPublish(topic)
 
-    const matchingHandlers = Object.keys(this.subscriptions).reduce<SubscriptionHandler[]>(
-      (handlers, key) => {
-        const subscription = this.subscriptions[key]
-        return subscription.matchTopic(topic) ? [...handlers, ...subscription.handlers] : handlers
-      },
-      [],
-    )
+    const batchSize = options?.batchSize ?? 100
+    const delayMs = options?.delayMs ?? 10
 
-    matchingHandlers.forEach(({ callback, parseJson }) => {
-      if (parseJson) {
-        if (success) {
-          callback(json, topic, packet)
-        } else {
-          logParseError = true
-        }
-      } else {
-        callback(payload.toString(), topic, packet)
-      }
+    const queryResult = await httpClient.query({
+      topic,
+      depth: -1,
+      flatten: true,
+      parseJson: false,
     })
 
-    if (logParseError && this.onParseError) {
-      this.onParseError(payload, topic)
+    const topicsToUnpublish = (queryResult as FlatTopicResult[]).map(
+      (r) => r.topic,
+    )
+
+    if (topicsToUnpublish.length === 0) {
+      return
+    }
+
+    for (let i = 0; i < topicsToUnpublish.length; i += batchSize) {
+      const batch = topicsToUnpublish.slice(i, i + batchSize)
+
+      await Promise.all(batch.map((t) => this.unpublish(t)))
+
+      if (delayMs > 0 && i + batchSize < topicsToUnpublish.length) {
+        await new Promise((resolve) => setTimeout(resolve, delayMs))
+      }
     }
   }
-}
 
-function parsePayload(payload: Buffer): [boolean, any] {
-  try {
-    return [true, JSON.parse(payload.toString())]
-  } catch (error) {
-    return [payload.length === 0, undefined]
+  public async unpublish(
+    topic: string,
+    qos: QoS = QUALITY_OF_SERVICE,
+  ): Promise<MqttResult | void> {
+    validateTopicForPublish(topic)
+
+    return this.publish(topic, undefined, {
+      qos,
+      retain: true,
+    })
+  }
+
+  private _handleMessage(
+    topic: string,
+    payload: Buffer | Uint8Array, // MQTT.js provides Buffer in Node.js, Uint8Array in browser
+    packet: Packet,
+  ): void {
+    let firstParsingError: Error | null = null
+
+    const tryProcess = (subscription: {
+      handlers: SubscriptionHandler[]
+    }): Error | null => {
+      return processHandlersForTopic(subscription, topic, payload, packet)
+    }
+
+    const exactSubscription = this.subscriptions[topic]
+    if (exactSubscription) {
+      const error = tryProcess(exactSubscription)
+      if (error && !firstParsingError) firstParsingError = error
+    }
+
+    for (const subscriptionTopic of Object.keys(this.subscriptions)) {
+      if (subscriptionTopic === topic) continue
+
+      if (!subscriptionTopic.includes("+") && !subscriptionTopic.includes("#"))
+        continue
+
+      const subscription = this.subscriptions[subscriptionTopic]
+      if (!subscription?.handlers?.length) continue
+
+      const matchFn = matchTopic(subscriptionTopic)
+
+      if (matchFn(topic)) {
+        const error = tryProcess(subscription)
+        if (error && !firstParsingError) firstParsingError = error
+      }
+    }
+
+    if (firstParsingError) {
+      const parseError = new MqttPayloadError(
+        `Payload parsing failed: ${firstParsingError.message}`,
+        { cause: firstParsingError, topic: topic, rawPayload: payload },
+      )
+      console.error("MQTT payload parse error:", parseError)
+    }
+  }
+
+  public async disconnect(force?: boolean | undefined): Promise<void> {
+    this._removeAllEventListeners()
+
+    const topics = Object.keys(this.subscriptions)
+    if (topics.length > 0) {
+      try {
+        await this.client.unsubscribeAsync(topics)
+      } catch (error) {
+        console.warn(
+          `Warning: Failed to unsubscribe from topics during disconnect: ${error instanceof Error ? error.message : String(error)}`,
+        )
+      } finally {
+        this._clearAllSubscriptions()
+      }
+    }
+
+    try {
+      await this.client.endAsync(force ?? false)
+    } catch (error) {
+      throw new MqttDisconnectError(
+        `Failed to end MQTT connection: ${error instanceof Error ? error.message : String(error)}`,
+        { cause: error },
+      )
+    }
+  }
+
+  private _removeAllEventListeners(): void {
+    if (this.messageHandler) {
+      this.client.removeListener("message", this.messageHandler)
+    }
+  }
+
+  private _clearAllSubscriptions(): void {
+    for (const topic in this.subscriptions) {
+      delete this.subscriptions[topic]
+    }
+  }
+
+  public isConnected(): boolean {
+    return this.client.connected
+  }
+
+  public isReconnecting(): boolean {
+    return this.client.reconnecting
   }
 }
