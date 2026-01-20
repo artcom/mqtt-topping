@@ -82,7 +82,8 @@ export class MqttClient {
       uri.startsWith("ws:") ||
       uri.startsWith("wss:") ||
       uri.startsWith("http:") ||
-      uri.startsWith("https:")
+      uri.startsWith("https:") ||
+      uri.startsWith("tcp:")
     ) {
       try {
         new URL(uri)
