@@ -75,14 +75,14 @@ describe("MqttClient - Connection", () => {
       expect(connectMock).toHaveBeenCalledTimes(1)
     })
 
-    it("should throw MqttUsageError for malformed web-based URIs (if URL check is kept)", async () => {
+    it("should throw MqttUsageError for malformed URIs", async () => {
       const malformedWsUri = "ws://bad host name"
 
       await expect(MqttClient.connect(malformedWsUri)).rejects.toThrow(
         MqttUsageError,
       )
       await expect(MqttClient.connect(malformedWsUri)).rejects.toThrow(
-        /Invalid MQTT broker URI format for web-based scheme/,
+        /Invalid MQTT broker URI format for provided scheme/,
       )
       expect(connectMock).not.toHaveBeenCalled()
     })

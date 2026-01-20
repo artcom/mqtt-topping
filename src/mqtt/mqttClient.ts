@@ -88,7 +88,7 @@ export class MqttClient {
         new URL(uri)
       } catch (error) {
         throw new MqttUsageError(
-          `Invalid MQTT broker URI format for web-based scheme: ${uri}`,
+          `Invalid MQTT broker URI format for provided scheme: ${uri}`,
           {
             cause: error,
           },
