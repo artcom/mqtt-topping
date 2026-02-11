@@ -1,9 +1,7 @@
 export class MqttToppingError extends Error {
-  public readonly cause?: unknown
   constructor(message: string, options?: { cause?: unknown }) {
-    super(message)
+    super(message, options)
     this.name = this.constructor.name
-    this.cause = options?.cause
   }
 }
 
@@ -21,41 +19,42 @@ export class MqttConnectionError extends MqttError {
   }
 }
 
-export class MqttSubscribeError extends MqttError {
+class MqttTopicError extends MqttError {
   public readonly topic: string | string[]
+  constructor(
+    prefix: string,
+    topic: string | string[],
+    message: string,
+    options?: { cause?: unknown },
+  ) {
+    super(`${prefix} for topic(s) "${String(topic)}": ${message}`, options)
+    this.topic = topic
+  }
+}
+
+export class MqttSubscribeError extends MqttTopicError {
   constructor(
     topic: string | string[],
     message: string,
     options?: { cause?: unknown },
   ) {
-    super(
-      `MQTT Subscribe Error for topic(s) "${String(topic)}": ${message}`,
-      options,
-    )
-    this.topic = topic
+    super("MQTT Subscribe Error", topic, message, options)
   }
 }
 
-export class MqttUnsubscribeError extends MqttError {
-  public readonly topic: string | string[]
+export class MqttUnsubscribeError extends MqttTopicError {
   constructor(
     topic: string | string[],
     message: string,
     options?: { cause?: unknown },
   ) {
-    super(
-      `MQTT Unsubscribe Error for topic(s) "${String(topic)}": ${message}`,
-      options,
-    )
-    this.topic = topic
+    super("MQTT Unsubscribe Error", topic, message, options)
   }
 }
 
-export class MqttPublishError extends MqttError {
-  public readonly topic: string
+export class MqttPublishError extends MqttTopicError {
   constructor(topic: string, message: string, options?: { cause?: unknown }) {
-    super(`MQTT Publish Error for topic "${topic}": ${message}`, options)
-    this.topic = topic
+    super("MQTT Publish Error", topic, message, options)
   }
 }
 
@@ -88,6 +87,21 @@ export class MqttDisconnectError extends MqttError {
 }
 
 export class HttpError extends MqttToppingError {}
+
+class HttpTopicError extends HttpError {
+  public readonly topic?: string
+  constructor(
+    prefix: string,
+    message: string,
+    options?: { cause?: unknown; topic?: string },
+  ) {
+    super(
+      `${prefix}${options?.topic ? ` for topic "${options.topic}"` : ""}: ${message}`,
+      options,
+    )
+    this.topic = options?.topic
+  }
+}
 
 export class HttpNetworkError extends HttpError {
   public readonly url: string
@@ -134,14 +148,9 @@ export class HttpQueryError extends HttpError {
   }
 }
 
-export class HttpPayloadParseError extends HttpError {
-  public readonly topic?: string
+export class HttpPayloadParseError extends HttpTopicError {
   constructor(message: string, options?: { cause?: unknown; topic?: string }) {
-    super(
-      `HTTP Response Payload Parse Error${options?.topic ? ` for topic "${options.topic}"` : ""}: ${message}`,
-      options,
-    )
-    this.topic = options?.topic
+    super("HTTP Response Payload Parse Error", message, options)
   }
 }
 
@@ -172,13 +181,8 @@ export class HttpServerError extends HttpError {
   }
 }
 
-export class HttpProcessingError extends HttpError {
-  public readonly topic?: string
+export class HttpProcessingError extends HttpTopicError {
   constructor(message: string, options?: { cause?: unknown; topic?: string }) {
-    super(
-      `HTTP Response Processing Error${options?.topic ? ` for topic "${options.topic}"` : ""}: ${message}`,
-      options,
-    )
-    this.topic = options?.topic
+    super("HTTP Response Processing Error", message, options)
   }
 }
