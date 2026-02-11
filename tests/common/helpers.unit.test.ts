@@ -430,7 +430,6 @@ describe("MQTT Helper Functions", () => {
         throw callbackError
       })
       const payload = Buffer.from(JSON.stringify({ test: "value" }))
-      const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation()
 
       const result = processHandlersForTopic(
         subscription,
@@ -439,17 +438,9 @@ describe("MQTT Helper Functions", () => {
         packet,
       )
 
+      // Callback errors are swallowed (consumer's responsibility)
       expect(result).toBeNull()
       expect(callback).toHaveBeenCalledTimes(1)
-      expect(consoleErrorSpy).toHaveBeenCalledTimes(1)
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining(
-          `Error in subscription callback for topic "${topic}"`,
-        ),
-        callbackError,
-      )
-
-      consoleErrorSpy.mockRestore()
     })
 
     it("should process multiple handlers correctly", () => {

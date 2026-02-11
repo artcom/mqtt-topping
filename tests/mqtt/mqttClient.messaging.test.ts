@@ -6,10 +6,13 @@ const connectMock = jest.mocked(mqtt.connectAsync)
 
 describe("MqttClient - Message Handling", () => {
   let client: MqttClient
+  let onParseError: jest.Mock
+
   beforeEach(async () => {
     jest.clearAllMocks()
+    onParseError = jest.fn()
     await connectMock("mqtt://dummy")
-    client = await MqttClient.connect("mqtt://dummy")
+    client = await MqttClient.connect("mqtt://dummy", { onParseError })
   })
 
   describe("Payload parsing", () => {
@@ -120,9 +123,8 @@ describe("MqttClient - Message Handling", () => {
   })
 
   describe("Error handling (Console)", () => {
-    it("should handle invalid JSON and log parse error", async () => {
+    it("should handle invalid JSON and call onParseError", async () => {
       const mainCallback = jest.fn()
-      const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation()
 
       await client.subscribe("json/invalid", mainCallback, {
         parseType: "json",
@@ -135,24 +137,16 @@ describe("MqttClient - Message Handling", () => {
       client._handleMessage("json/invalid", invalidPayload, pkt)
 
       expect(mainCallback).not.toHaveBeenCalled()
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        "MQTT payload parse error:",
-        expect.any(Error),
+      expect(onParseError).toHaveBeenCalledTimes(1)
+      expect(onParseError).toHaveBeenCalledWith(
+        expect.any(SyntaxError),
+        "json/invalid",
+        invalidPayload,
       )
-
-      // Verify the error was logged with correct details
-      expect(consoleErrorSpy.mock.calls).toHaveLength(1)
-      expect(consoleErrorSpy.mock.calls[0]).toHaveLength(2)
-      const loggedError = consoleErrorSpy.mock.calls[0][1] as Error
-      expect(loggedError.message).toMatch(/Payload parsing failed/)
-      expect(loggedError.cause).toBeInstanceOf(SyntaxError)
-
-      consoleErrorSpy.mockRestore()
     })
 
-    it("should handle custom parser errors and log parse error", async () => {
+    it("should handle custom parser errors and call onParseError", async () => {
       const callback = jest.fn()
-      const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation()
       const parserError = new Error("Parser error")
 
       const failingParser = jest.fn(() => {
@@ -171,23 +165,16 @@ describe("MqttClient - Message Handling", () => {
       client._handleMessage("custom/fail", payload, pkt)
 
       expect(callback).not.toHaveBeenCalled()
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        "MQTT payload parse error:",
-        expect.any(Error),
+      expect(onParseError).toHaveBeenCalledTimes(1)
+      expect(onParseError).toHaveBeenCalledWith(
+        parserError,
+        "custom/fail",
+        payload,
       )
-
-      // Verify the error was logged with correct details
-      expect(consoleErrorSpy.mock.calls).toHaveLength(1)
-      expect(consoleErrorSpy.mock.calls[0]).toHaveLength(2)
-      const loggedError = consoleErrorSpy.mock.calls[0][1] as Error
-      expect(loggedError.message).toMatch(/Payload parsing failed/)
-
-      consoleErrorSpy.mockRestore()
     })
 
     it("should handle JSON parse errors gracefully", async () => {
       const callback = jest.fn()
-      const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation()
 
       await client.subscribe("error/in/handler", callback, {
         parseType: "json",
@@ -196,19 +183,37 @@ describe("MqttClient - Message Handling", () => {
       const invalidPayload = Buffer.from("{not valid JSON}")
       const pkt = {} as Packet
 
-      // Should not throw - errors are logged to console
+      // Should not throw - errors go to onParseError callback
       expect(() =>
         // @ts-expect-error Accessing private method for testing
         client._handleMessage("error/in/handler", invalidPayload, pkt),
       ).not.toThrow()
 
       expect(callback).not.toHaveBeenCalled()
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        "MQTT payload parse error:",
-        expect.any(Error),
-      )
+      expect(onParseError).toHaveBeenCalledTimes(1)
+    })
 
-      consoleErrorSpy.mockRestore()
+    it("should silently handle parse errors when no onParseError is provided", async () => {
+      const clientNoHandler = await MqttClient.connect("mqtt://dummy")
+      const callback = jest.fn()
+
+      await clientNoHandler.subscribe("json/silent", callback, {
+        parseType: "json",
+      })
+
+      const invalidPayload = Buffer.from("{not valid JSON}")
+
+      // Should not throw even without onParseError
+      expect(() =>
+        // @ts-expect-error Accessing private method for testing
+        clientNoHandler._handleMessage(
+          "json/silent",
+          invalidPayload,
+          {} as Packet,
+        ),
+      ).not.toThrow()
+
+      expect(callback).not.toHaveBeenCalled()
     })
   })
   describe("Topic matching", () => {

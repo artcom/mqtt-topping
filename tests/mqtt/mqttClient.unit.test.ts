@@ -9,11 +9,13 @@ const connectMock = jest.mocked(mqtt.connectAsync)
 describe("MqttClient", () => {
   let mockMqttClient: jest.Mocked<Partial<MqttJsClient>>
   let client: MqttClient
+  let onParseError: jest.Mock
 
   beforeEach(async () => {
     jest.clearAllMocks()
+    onParseError = jest.fn()
     mockMqttClient = await connectMock("mqtt://dummy")
-    client = await MqttClient.connect("mqtt://dummy")
+    client = await MqttClient.connect("mqtt://dummy", { onParseError })
   })
 
   describe("Initialization", () => {
@@ -305,11 +307,8 @@ describe("MqttClient", () => {
     })
 
     describe("Error handling", () => {
-      it("should handle invalid JSON and log parse error", async () => {
+      it("should handle invalid JSON and call onParseError", async () => {
         const mainCallback = jest.fn()
-        const consoleErrorSpy = jest
-          .spyOn(console, "error")
-          .mockImplementation()
 
         await client.subscribe("json/invalid", mainCallback, {
           parseType: "json",
@@ -324,21 +323,21 @@ describe("MqttClient", () => {
         // @ts-expect-error Accessing private method for testing
         client._handleMessage("json/invalid", invalidPayload, {} as Packet)
 
-        expect(consoleErrorSpy).toHaveBeenCalledWith(
-          "MQTT payload parse error:",
-          expect.any(Error),
+        expect(onParseError).toHaveBeenCalledTimes(1)
+        expect(onParseError).toHaveBeenCalledWith(
+          expect.any(SyntaxError),
+          "json/invalid",
+          invalidPayload,
         )
-
-        consoleErrorSpy.mockRestore()
       })
     })
 
-    it("should handle custom parser errors and log parse error", async () => {
+    it("should handle custom parser errors and call onParseError", async () => {
       const callback = jest.fn()
-      const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation()
 
+      const parserError = new Error("Parser error")
       const failingParser = jest.fn(() => {
-        throw new Error("Parser error")
+        throw parserError
       })
 
       await client.subscribe("custom/fail", callback, {
@@ -352,12 +351,12 @@ describe("MqttClient", () => {
       client._handleMessage("custom/fail", payload, {} as Packet)
 
       expect(callback).not.toHaveBeenCalled()
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        "MQTT payload parse error:",
-        expect.any(Error),
+      expect(onParseError).toHaveBeenCalledTimes(1)
+      expect(onParseError).toHaveBeenCalledWith(
+        parserError,
+        "custom/fail",
+        payload,
       )
-
-      consoleErrorSpy.mockRestore()
     })
 
     describe("Topic matching", () => {
