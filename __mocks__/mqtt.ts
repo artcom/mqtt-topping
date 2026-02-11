@@ -1,68 +1,14 @@
 import { Packet, MqttClient } from "mqtt"
 
-type PacketCallback = (error?: Error | null, packet?: Packet) => void
-type ClientSubscribeCallback = (err: Error | null, granted: unknown[]) => void
-
 // Simple event listener storage for the mock
 const listeners: Record<string, Array<(...args: unknown[]) => void>> = {}
 
 export const MqttClientMock: jest.Mocked<Partial<MqttClient>> & {
   _emit: (event: string, ...args: unknown[]) => void
 } = {
-  publish: jest
-    .fn()
-    .mockImplementation(
-      (
-        _topic: string,
-        _message: string | Buffer,
-        _optsOrCb?: object | PacketCallback,
-        _cb?: PacketCallback,
-      ) => {
-        let callback: PacketCallback | undefined
-        if (typeof _optsOrCb === "function") {
-          callback = _optsOrCb as PacketCallback
-        } else if (typeof _cb === "function") {
-          callback = _cb
-        }
-        callback?.(null, {} as Packet)
-        return MqttClientMock
-      },
-    ),
-  subscribe: jest
-    .fn()
-    .mockImplementation(
-      (
-        _topic: string | string[],
-        _optsOrCb: object | ClientSubscribeCallback,
-        maybeCb?: ClientSubscribeCallback,
-      ) => {
-        if (typeof _optsOrCb === "function") {
-          ;(_optsOrCb as ClientSubscribeCallback)(null, [])
-        } else {
-          maybeCb?.(null, [])
-        }
-        return MqttClientMock
-      },
-    ),
   subscribeAsync: jest.fn().mockImplementation(() => {
     return Promise.resolve([] as unknown[])
   }),
-  unsubscribe: jest
-    .fn()
-    .mockImplementation(
-      (
-        _topic: string | string[],
-        _optsOrCb: object | PacketCallback,
-        maybeCb?: PacketCallback,
-      ) => {
-        if (typeof _optsOrCb === "function") {
-          ;(_optsOrCb as PacketCallback)(null, {} as Packet)
-        } else {
-          maybeCb?.(null, {} as Packet)
-        }
-        return MqttClientMock
-      },
-    ),
   unsubscribeAsync: jest.fn().mockResolvedValue({} as Packet),
   publishAsync: jest.fn().mockResolvedValue({} as Packet),
   endAsync: jest.fn().mockResolvedValue(undefined),
