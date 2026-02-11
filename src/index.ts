@@ -9,7 +9,6 @@ export type {
   SubscribeOptions as MqttSubscribeOptions,
   PublishOptions as MqttPublishOptions,
   PayloadParseType as MqttPayloadParseType,
-  PayloadType as MqttPayloadType,
   MqttResult,
 } from "./mqtt/types"
 
@@ -19,7 +18,6 @@ export type {
   Query as HttpQuery,
   QueryResult as HttpQueryResult,
   BatchQueryResult as HttpBatchQueryResult,
-  JsonResult as HttpJsonResult,
   TopicResult as HttpTopicResult,
   FlatTopicResult as HttpFlatTopicResult,
   BatchQueryResponse as HttpBatchQueryResponse,

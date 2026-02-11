@@ -36,5 +36,3 @@ export type BatchQueryResponse<P = unknown, E = unknown> = Array<
 export type BatchQueryResult<P = unknown, E = unknown> = Array<
   TopicResult<P> | FlatTopicResult<P>[] | ErrorResult<E> | Error
 >
-
-export type JsonResult = unknown

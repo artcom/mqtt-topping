@@ -1,23 +1,7 @@
-import {
-  Packet,
-  IClientOptions,
-  IClientSubscribeProperties,
-  IClientUnsubscribeProperties,
-} from "mqtt"
+import { Packet, IClientOptions, IClientSubscribeProperties } from "mqtt"
 
 import type { QoS } from "mqtt-packet"
 export type PayloadParseType = "json" | "string" | "buffer" | "custom"
-
-// Type mapping for payload based on parseType
-export type PayloadType<T extends PayloadParseType> = T extends "buffer"
-  ? Buffer
-  : T extends "string"
-    ? string
-    : T extends "json"
-      ? unknown // JSON can be any valid JSON value
-      : T extends "custom"
-        ? unknown // Custom parser can return anything
-        : unknown
 
 export type PublishPayloadParseType = Exclude<PayloadParseType, "custom">
 
@@ -60,9 +44,10 @@ export interface SubscribeOptions extends IClientSubscribeProperties {
   customParser?: (payload: unknown) => unknown
 }
 
-export interface PublishOptions extends IClientUnsubscribeProperties {
+export interface PublishOptions {
   qos?: QoS
   retain?: boolean
   parseType?: PublishPayloadParseType
   customParser?: (payload: unknown) => string | Buffer
+  properties?: Record<string, unknown>
 }
