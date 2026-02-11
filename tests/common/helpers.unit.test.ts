@@ -245,56 +245,47 @@ describe("MQTT Helper Functions", () => {
   describe("parsePayload", () => {
     it("should parse valid JSON buffer", () => {
       const payload = Buffer.from(JSON.stringify({ test: "value" }))
-      const [success, result, error] = parsePayload(payload)
-      expect(success).toBe(true)
-      expect(result).toEqual({ test: "value" })
-      expect(error).toBeNull()
+      const result = parsePayload(payload)
+      expect(result.ok).toBe(true)
+      if (result.ok) expect(result.value).toEqual({ test: "value" })
     })
 
     it("should return undefined for empty buffer", () => {
       const payload = Buffer.from("")
-      const [success, result, error] = parsePayload(payload)
-      expect(success).toBe(true)
-      expect(result).toBeUndefined()
-      expect(error).toBeNull()
+      const result = parsePayload(payload)
+      expect(result.ok).toBe(true)
+      if (result.ok) expect(result.value).toBeUndefined()
     })
 
     it("should return undefined for null input", () => {
-      const [success, result, error] = parsePayload(null as unknown as Buffer)
-      expect(success).toBe(false)
-      expect(result).toBeUndefined()
-      expect(error).toBeNull()
+      const result = parsePayload(null as unknown as Buffer)
+      expect(result.ok).toBe(false)
+      if (!result.ok) expect(result.error).toBeNull()
     })
 
     it("should return undefined for undefined input", () => {
-      const [success, result, error] = parsePayload(
-        undefined as unknown as Buffer,
-      )
-      expect(success).toBe(false)
-      expect(result).toBeUndefined()
-      expect(error).toBeNull()
+      const result = parsePayload(undefined as unknown as Buffer)
+      expect(result.ok).toBe(false)
+      if (!result.ok) expect(result.error).toBeNull()
     })
 
     it("should handle invalid JSON buffer and return error", () => {
       const payload = Buffer.from("invalid JSON")
-      const [success, result, error] = parsePayload(payload)
-      expect(success).toBe(false)
-      expect(result).toBeUndefined()
-      expect(error).toBeInstanceOf(SyntaxError)
+      const result = parsePayload(payload)
+      expect(result.ok).toBe(false)
+      if (!result.ok) expect(result.error).toBeInstanceOf(SyntaxError)
     })
 
     it("should parse numbers and booleans correctly (after stringify)", () => {
       const payloadNum = Buffer.from(JSON.stringify(123))
-      const [successNum, resultNum, errorNum] = parsePayload(payloadNum)
-      expect(successNum).toBe(true)
-      expect(resultNum).toBe(123)
-      expect(errorNum).toBeNull()
+      const resultNum = parsePayload(payloadNum)
+      expect(resultNum.ok).toBe(true)
+      if (resultNum.ok) expect(resultNum.value).toBe(123)
 
       const payloadBool = Buffer.from(JSON.stringify(true))
-      const [successBool, resultBool, errorBool] = parsePayload(payloadBool)
-      expect(successBool).toBe(true)
-      expect(resultBool).toBe(true)
-      expect(errorBool).toBeNull()
+      const resultBool = parsePayload(payloadBool)
+      expect(resultBool.ok).toBe(true)
+      if (resultBool.ok) expect(resultBool.value).toBe(true)
     })
   })
 

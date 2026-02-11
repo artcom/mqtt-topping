@@ -2,44 +2,10 @@ import { IClientOptions, Packet } from "mqtt"
 import { ClientOptions, ParseErrorCallback, SubscriptionHandler } from "./types"
 import { KEEP_ALIVE, CONNECT_TIMEOUT } from "../defaults"
 import { InvalidTopicError } from "../errors"
-
-function _isValidMqttPart(part: unknown): part is string {
-  return typeof part === "string" && part.length > 0
-}
-
-function _compareLevels(
-  subLevels: string[],
-  topLevels: string[],
-  maxIndex: number,
-): boolean {
-  for (let i = 0; i < maxIndex; i++) {
-    const sub = subLevels[i]
-    const top = topLevels[i]
-
-    if (top === undefined) {
-      return false
-    }
-    if (sub !== "+" && sub !== top) {
-      return false
-    }
-  }
-  return true
-}
-
-function _checkLengthMatch(
-  subLevels: string[],
-  topLevels: string[],
-  hasHash: boolean,
-): boolean {
-  if (hasHash) {
-    return topLevels.length >= subLevels.length - 1
-  } else {
-    return subLevels.length === topLevels.length && !topLevels.includes("")
-  }
-}
+import { bufferToString, errorMessage } from "../utils"
 
 export function matchTopic(subscription: string): (topic: string) => boolean {
-  if (!_isValidMqttPart(subscription)) {
+  if (typeof subscription !== "string" || subscription.length === 0) {
     return () => false
   }
 
@@ -54,7 +20,7 @@ export function matchTopic(subscription: string): (topic: string) => boolean {
   const comparisonEndIndex = hasHash ? subLen - 1 : subLen
 
   return (topic: string): boolean => {
-    if (!_isValidMqttPart(topic)) {
+    if (typeof topic !== "string" || topic.length === 0) {
       return false
     }
 
@@ -68,40 +34,41 @@ export function matchTopic(subscription: string): (topic: string) => boolean {
 
     const topLevels = topic.split("/")
 
-    if (!_compareLevels(subLevels, topLevels, comparisonEndIndex)) {
-      return false
+    for (let i = 0; i < comparisonEndIndex; i++) {
+      const sub = subLevels[i]
+      const top = topLevels[i]
+      if (top === undefined) return false
+      if (sub !== "+" && sub !== top) return false
     }
 
-    return _checkLengthMatch(subLevels, topLevels, hasHash)
+    if (hasHash) {
+      return topLevels.length >= subLevels.length - 1
+    }
+    return subLevels.length === topLevels.length && !topLevels.includes("")
   }
 }
 
-export function parsePayload(
-  payload: Buffer | Uint8Array,
-): [boolean, unknown, SyntaxError | null] {
+type ParseResult =
+  | { ok: true; value: unknown }
+  | { ok: false; error: SyntaxError | null }
+
+export function parsePayload(payload: Buffer | Uint8Array): ParseResult {
   if (payload == null) {
-    return [false, undefined, null]
+    return { ok: false, error: null }
   }
   if (payload.length === 0) {
-    return [true, undefined, null]
+    return { ok: true, value: undefined }
   }
   try {
-    const payloadStr =
-      typeof Buffer !== "undefined" && Buffer.isBuffer(payload)
-        ? payload.toString()
-        : new TextDecoder().decode(payload)
-    return [true, JSON.parse(payloadStr), null]
+    return { ok: true, value: JSON.parse(bufferToString(payload)) }
   } catch (error) {
-    if (error instanceof SyntaxError) {
-      return [false, undefined, error]
+    return {
+      ok: false,
+      error:
+        error instanceof SyntaxError
+          ? error
+          : new SyntaxError(`Unexpected parsing issue: ${errorMessage(error)}`),
     }
-    return [
-      false,
-      undefined,
-      new SyntaxError(
-        `Unexpected parsing issue: ${error instanceof Error ? error.message : String(error)}`,
-      ),
-    ]
   }
 }
 
@@ -116,38 +83,38 @@ export function isEventOrCommand(topic: string): boolean {
     return false
   }
   const prefix = lastTopicLevel.substring(0, 2)
+  const thirdChar = lastTopicLevel.charAt(2)
   return (
-    (prefix === "on" || prefix === "do") &&
-    isUpperCase(lastTopicLevel.charAt(2))
+    (prefix === "on" || prefix === "do") && thirdChar >= "A" && thirdChar <= "Z"
   )
 }
 
-function isUpperCase(char: string): boolean {
-  return char >= "A" && char <= "Z"
-}
-
-export function createClientId(
-  appId = "UnknownApp",
-  deviceId?: string,
-): string {
-  if (!appId) {
-    appId = "UnknownApp"
-  }
+export function createClientId(appId?: string, deviceId?: string): string {
+  const app = appId || "UnknownApp"
   const uuid = Math.random().toString(16).substring(2, 10)
-  return deviceId ? `${appId}-${deviceId}-${uuid}` : `${appId}-${uuid}`
+  return deviceId ? `${app}-${deviceId}-${uuid}` : `${app}-${uuid}`
 }
 
 export function processOptions(options: ClientOptions): {
   finalOptions: IClientOptions
   onParseError?: ParseErrorCallback
 } {
-  const { appId, deviceId, clientId, will, onParseError, ...rest } = options
+  const {
+    appId,
+    deviceId,
+    clientId,
+    will,
+    onParseError,
+    keepalive,
+    connectTimeout,
+    ...rest
+  } = options
   const finalOptions: IClientOptions = {
-    clientId: clientId || createClientId(appId, deviceId),
-    keepalive: options.keepalive ?? KEEP_ALIVE,
-    connectTimeout: options.connectTimeout ?? CONNECT_TIMEOUT,
-    will: processWillMessage(will),
     ...rest,
+    clientId: clientId || createClientId(appId, deviceId),
+    keepalive: keepalive ?? KEEP_ALIVE,
+    connectTimeout: connectTimeout ?? CONNECT_TIMEOUT,
+    will: processWillMessage(will),
   }
   return { finalOptions, onParseError }
 }
@@ -228,13 +195,7 @@ export function processHandlersForTopic(
           callback(payload, topic, packet)
           break
         case "string":
-          callback(
-            typeof Buffer !== "undefined" && Buffer.isBuffer(payload)
-              ? payload.toString()
-              : new TextDecoder().decode(payload),
-            topic,
-            packet,
-          )
+          callback(bufferToString(payload), topic, packet)
           break
         case "custom":
           try {
@@ -255,11 +216,11 @@ export function processHandlersForTopic(
           break
         case "json":
         default: {
-          const [success, json, parseError] = parsePayload(payload)
-          if (success) {
-            callback(json, topic, packet)
-          } else if (parseError && !firstParsingError) {
-            firstParsingError = parseError
+          const result = parsePayload(payload)
+          if (result.ok) {
+            callback(result.value, topic, packet)
+          } else if (result.error && !firstParsingError) {
+            firstParsingError = result.error
           }
         }
       }
