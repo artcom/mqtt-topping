@@ -82,22 +82,18 @@ const options: MqttClientOptions = {
 
 try {
   console.log(`Connecting to ${brokerUrl}...`)
-  const client = await MqttClient.connect(brokerUrl, options)
+  const client = await MqttClient.connect(brokerUrl, {
+    ...options,
+    // Handle payload parsing errors (invalid JSON, custom parser failures)
+    onParseError: (error, topic, rawPayload) => {
+      console.warn(`Failed to parse payload for topic ${topic}:`, error.message)
+    },
+  })
   console.log("Connected!")
 
-  // Handle asynchronous errors from the client
-  client.on("error", (err) => {
+  // Listen for background errors on the underlying mqtt.js client
+  client.underlyingClient.on("error", (err) => {
     console.error("MQTT Background Error:", err)
-    // Add logic here to handle reconnect or shutdown if necessary
-  })
-  // Handle payload parsing errors via event
-  client.on("parse_error", (error, rawPayload, topic) => {
-  ## Features
-    console.warn(
-      `Failed to parse payload for topic ${topic}:`,
-      error.message,
-      rawPayload.toString("utf8"),
-    )
   })
 
   const topic = "mqtt-topping/demo/sensor"
@@ -286,8 +282,10 @@ const options: MqttClientOptions = {
   connectTimeout: 5000, // ms, default 30000
   keepalive: 60, // seconds, default 30
   // Other standard MQTT.js options...
-  // Custom option for parse error handling:
-  // onParseError: (rawPayload, topic) => { /* handle */ },
+  // Handle parse errors:
+  onParseError: (error, topic, rawPayload) => {
+    console.warn(`Parse error on ${topic}:`, error.message)
+  },
 }
 
 try {
@@ -521,18 +519,25 @@ await client.subscribe(
 
 ### Error Handling (`onParseError` & Async Errors)
 
-- **Parse Errors:** Use `client.setOnParseError((rawPayload, topic) => { ... })` to register a global handler for when incoming message parsing fails (invalid JSON or custom parser error).
-- **Parse Errors:** Listen for the `'parse_error'` event:
-  `client.on('parse_error', (error, rawPayload, topic) => { ... })`
+- **Parse Errors:** Pass an `onParseError` callback in the connection options to handle incoming message parsing failures (invalid JSON, custom parser errors):
+  ```typescript
+  const client = await MqttClient.connect("mqtt://broker", {
+    onParseError: (error, topic, rawPayload) => {
+      console.warn(`Parse error on ${topic}:`, error.message)
+    },
+  })
+  ```
+  If no `onParseError` is provided, parse errors are silently ignored (the subscription callback is simply not called).
 - **Connection/Operation Errors:** `connect`, `subscribe`, `publish`, etc., return Promises that reject with specific error types (e.g., `MqttConnectionError`, `MqttSubscribeError`, `MqttPublishError`, `MqttUsageError`, `InvalidTopicError`). Use `try...catch` with async/await.
-  **Background Client Errors:** The `MqttClient` instance forwards important events from the underlying client, including `'error'`, `'connect'`, `'close'`, `'reconnect'`, `'offline'`, and `'end'`. Listen for these directly:
+- **Background Client Errors:** The library attaches a default no-op `"error"` listener to the underlying mqtt.js client to prevent unhandled errors from crashing your process. For custom error handling and lifecycle events, use `client.underlyingClient` directly:
 
 ```typescript
-client.on("error", (err) => {
+client.underlyingClient.on("error", (err) => {
   console.error("MQTT Client Error:", err)
-  // Implement reconnection logic or shutdown as needed
 })
-client.on("close", () => console.log("MQTT connection closed."))
+client.underlyingClient.on("close", () => console.log("Connection closed."))
+client.underlyingClient.on("reconnect", () => console.log("Reconnecting..."))
+client.underlyingClient.on("offline", () => console.log("Client offline."))
 ```
 
 ### Disconnecting
