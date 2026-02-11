@@ -6,7 +6,6 @@ import type {
 } from "mqtt"
 
 // Universal import handling for both ESM (Vite) and CJS (Jest)
-// @ts-expect-error - Handle potential default export difference
 const mqttModule = mqtt.default || mqtt
 const { connectAsync } = mqttModule
 import {
@@ -34,6 +33,7 @@ import {
   MqttDisconnectError,
   InvalidTopicError,
 } from "../errors"
+import { errorMessage } from "../utils"
 import {
   matchTopic,
   isEventOrCommand,
@@ -51,10 +51,7 @@ export interface UnpublishRecursivelyOptions {
 
 export class MqttClient {
   public readonly underlyingClient: MqttJsClient
-  private readonly subscriptions: Record<
-    string,
-    { handlers: SubscriptionHandler[] }
-  >
+  private subscriptions: Record<string, { handlers: SubscriptionHandler[] }>
   private readonly onParseError?: ParseErrorCallback
   private messageHandler: (
     topic: string,
@@ -115,10 +112,7 @@ export class MqttClient {
       const mqttClient = await connectAsync(uri, finalOptions)
       return new MqttClient(mqttClient, onParseError)
     } catch (error) {
-      throw new MqttConnectionError(
-        error instanceof Error ? error.message : String(error),
-        { cause: error },
-      )
+      throw new MqttConnectionError(errorMessage(error), { cause: error })
     }
   }
 
@@ -182,11 +176,7 @@ export class MqttClient {
         }
       }
 
-      throw new MqttSubscribeError(
-        topic,
-        error instanceof Error ? error.message : String(error),
-        { cause: error },
-      )
+      throw new MqttSubscribeError(topic, errorMessage(error), { cause: error })
     }
   }
 
@@ -227,11 +217,9 @@ export class MqttClient {
         return packet ? { packet } : undefined
       }
     } catch (error) {
-      throw new MqttUnsubscribeError(
-        topic,
-        error instanceof Error ? error.message : String(error),
-        { cause: error },
-      )
+      throw new MqttUnsubscribeError(topic, errorMessage(error), {
+        cause: error,
+      })
     }
   }
 
@@ -258,7 +246,7 @@ export class MqttClient {
     } catch (error) {
       throw new MqttUnsubscribeError(
         topic,
-        `forceUnsubscribe failed: ${error instanceof Error ? error.message : String(error)}`,
+        `forceUnsubscribe failed: ${errorMessage(error)}`,
         { cause: error },
       )
     }
@@ -298,7 +286,7 @@ export class MqttClient {
             }
           } catch (jsonError) {
             throw new MqttPayloadError(
-              `Failed to JSON stringify payload: ${jsonError instanceof Error ? jsonError.message : String(jsonError)}`,
+              `Failed to JSON stringify payload: ${errorMessage(jsonError)}`,
               { cause: jsonError, topic: topic, rawPayload: data },
             )
           }
@@ -320,11 +308,7 @@ export class MqttClient {
         throw error
       }
 
-      throw new MqttPublishError(
-        topic,
-        error instanceof Error ? error.message : String(error),
-        { cause: error },
-      )
+      throw new MqttPublishError(topic, errorMessage(error), { cause: error })
     }
   }
 
@@ -383,15 +367,14 @@ export class MqttClient {
   ): void {
     let firstParsingError: Error | null = null
 
-    const tryProcess = (subscription: {
-      handlers: SubscriptionHandler[]
-    }): Error | null => {
-      return processHandlersForTopic(subscription, topic, payload, packet)
-    }
-
     const exactSubscription = this.subscriptions[topic]
     if (exactSubscription) {
-      const error = tryProcess(exactSubscription)
+      const error = processHandlersForTopic(
+        exactSubscription,
+        topic,
+        payload,
+        packet,
+      )
       if (error && !firstParsingError) firstParsingError = error
     }
 
@@ -407,7 +390,12 @@ export class MqttClient {
       const matchFn = matchTopic(subscriptionTopic)
 
       if (matchFn(topic)) {
-        const error = tryProcess(subscription)
+        const error = processHandlersForTopic(
+          subscription,
+          topic,
+          payload,
+          packet,
+        )
         if (error && !firstParsingError) firstParsingError = error
       }
     }
@@ -429,7 +417,7 @@ export class MqttClient {
       } catch {
         // Best-effort cleanup — connection may already be lost
       } finally {
-        this._clearAllSubscriptions()
+        this.subscriptions = {}
       }
     }
 
@@ -437,7 +425,7 @@ export class MqttClient {
       await this.client.endAsync(force ?? false)
     } catch (error) {
       throw new MqttDisconnectError(
-        `Failed to end MQTT connection: ${error instanceof Error ? error.message : String(error)}`,
+        `Failed to end MQTT connection: ${errorMessage(error)}`,
         { cause: error },
       )
     }
@@ -449,12 +437,6 @@ export class MqttClient {
     }
     if (this.errorHandler) {
       this.client.removeListener("error", this.errorHandler)
-    }
-  }
-
-  private _clearAllSubscriptions(): void {
-    for (const topic in this.subscriptions) {
-      delete this.subscriptions[topic]
     }
   }
 

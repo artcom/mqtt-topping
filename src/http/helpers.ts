@@ -1,4 +1,4 @@
-import { Query, TopicResult, FlatTopicResult, JsonResult } from "./types"
+import { Query, TopicResult, FlatTopicResult } from "./types"
 
 import {
   HttpError,
@@ -9,9 +9,14 @@ import {
   HttpPayloadParseError,
   HttpProcessingError,
 } from "../errors"
+import { bufferToString, errorMessage } from "../utils"
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function omitParseJson({ parseJson, ...rest }: Query): Query {
+/* eslint-disable @typescript-eslint/no-unused-vars */
+export function omitParseJson({
+  parseJson,
+  ...rest
+}: Query): Omit<Query, "parseJson"> {
+  /* eslint-enable @typescript-eslint/no-unused-vars */
   return rest
 }
 
@@ -25,10 +30,10 @@ export function makeJsonQuery(topic: string): Query {
   return { topic, depth: -1, flatten: false, parseJson: false }
 }
 
-export function makeObject(result: TopicResult): JsonResult {
+export function makeObject(result: TopicResult): unknown {
   try {
     if (result.children && result.children.length > 0) {
-      const obj: Record<string, JsonResult> = {}
+      const obj: Record<string, unknown> = {}
       result.children.forEach((child) => {
         let key = ""
         if (result.topic === "/") {
@@ -47,10 +52,10 @@ export function makeObject(result: TopicResult): JsonResult {
       return obj
     }
 
-    return result.payload as JsonResult
+    return result.payload as unknown
   } catch (error) {
     throw new HttpProcessingError(
-      `Failed to construct JSON object for topic ${result.topic}: ${error instanceof Error ? error.message : String(error)}`,
+      `Failed to construct JSON object for topic ${result.topic}: ${errorMessage(error)}`,
       { cause: error, topic: result.topic },
     )
   }
@@ -86,7 +91,7 @@ export function parsePayloads(
       })
     } else if (!(error instanceof HttpError)) {
       throw new HttpProcessingError(
-        `Error processing payloads for topic ${baseTopic}: ${error instanceof Error ? error.message : String(error)}`,
+        `Error processing payloads for topic ${baseTopic}: ${errorMessage(error)}`,
         { cause: error, topic: baseTopic },
       )
     }
@@ -105,10 +110,7 @@ export function parsePayload(result: TopicResult | FlatTopicResult): void {
     if (typeof result.payload === "string") {
       payloadStr = result.payload
     } else if (result.payload instanceof Uint8Array) {
-      payloadStr =
-        typeof Buffer !== "undefined" && Buffer.isBuffer(result.payload)
-          ? result.payload.toString()
-          : new TextDecoder().decode(result.payload)
+      payloadStr = bufferToString(result.payload as Buffer | Uint8Array)
     } else if (typeof result.payload === "object") {
       return
     } else {
@@ -124,7 +126,7 @@ export function parsePayload(result: TopicResult | FlatTopicResult): void {
     }
   } catch (error) {
     throw new HttpPayloadParseError(
-      `Failed to parse JSON payload: ${error instanceof Error ? error.message : String(error)}`,
+      `Failed to parse JSON payload: ${errorMessage(error)}`,
       { cause: error, topic: result.topic },
     )
   }
@@ -176,7 +178,7 @@ export async function post<T>(
       return (await response.json()) as T
     } catch (parseError) {
       throw new HttpPayloadParseError(
-        `Failed to parse successful response body from ${url}: ${parseError instanceof Error ? parseError.message : String(parseError)}`,
+        `Failed to parse successful response body from ${url}: ${errorMessage(parseError)}`,
         { cause: parseError },
       )
     }
@@ -200,10 +202,6 @@ export async function post<T>(
       }
     }
 
-    throw new HttpNetworkError(
-      url,
-      error instanceof Error ? error.message : String(error),
-      { cause: error },
-    )
+    throw new HttpNetworkError(url, errorMessage(error), { cause: error })
   }
 }

@@ -4,12 +4,12 @@ import {
   FlatTopicResult,
   QueryResult,
   BatchQueryResult,
-  JsonResult,
   BatchQueryResponse,
   ErrorResult,
   HttpClientOptions,
 } from "./types"
 import { HttpError, HttpServerError, HttpProcessingError } from "../errors"
+import { errorMessage } from "../utils"
 import {
   omitParseJson,
   makeJsonQuery,
@@ -76,7 +76,7 @@ export class HttpClient {
           return processError
         } else {
           return new HttpProcessingError(
-            `Failed to process batch result for topic ${topic}: ${processError instanceof Error ? processError.message : String(processError)}`,
+            `Failed to process batch result for topic ${topic}: ${errorMessage(processError)}`,
             { cause: processError, topic: topic },
           )
         }
@@ -84,7 +84,7 @@ export class HttpClient {
     })
   }
 
-  public async queryJson(topic: string): Promise<JsonResult> {
+  public async queryJson(topic: string): Promise<unknown> {
     const jsonQuery = makeJsonQuery(topic)
 
     const result = await this.query(jsonQuery)
@@ -104,7 +104,7 @@ export class HttpClient {
 
   public async queryJsonBatch(
     topics: string[],
-  ): Promise<Array<JsonResult | HttpError>> {
+  ): Promise<Array<unknown | HttpError>> {
     const jsonQueries = topics.map((t) => makeJsonQuery(t))
 
     const results = await this.queryBatch(jsonQueries)
@@ -130,7 +130,7 @@ export class HttpClient {
           return processingError
         } else {
           return new HttpProcessingError(
-            `Failed makeObject for topic ${topic}: ${processingError instanceof Error ? processingError.message : String(processingError)}`,
+            `Failed makeObject for topic ${topic}: ${errorMessage(processingError)}`,
             { cause: processingError, topic: topic },
           )
         }
