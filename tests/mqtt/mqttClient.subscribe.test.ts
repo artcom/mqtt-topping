@@ -1,6 +1,6 @@
 import { MqttClient as MqttJsClient } from "mqtt"
 import { MqttClient } from "../../src"
-import { InvalidTopicError } from "../../src/mqtt/types"
+import { InvalidTopicError } from "../../src/errors"
 import * as mqtt from "mqtt"
 import { MqttUsageError } from "../../src/errors"
 
