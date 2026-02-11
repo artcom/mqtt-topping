@@ -16,6 +16,7 @@ import {
   MessageCallback,
   ClientOptions,
   MqttResult,
+  ParseErrorCallback,
 } from "./types"
 
 import { QoS } from "mqtt-packet"
@@ -54,20 +55,31 @@ export class MqttClient {
     string,
     { handlers: SubscriptionHandler[] }
   >
+  private readonly onParseError?: ParseErrorCallback
   private messageHandler: (
     topic: string,
     payload: Buffer | Uint8Array, // MQTT.js provides Buffer in Node.js, Uint8Array in browser
     packet: Packet,
   ) => void
+  private errorHandler: (error: Error) => void
 
-  private constructor(private readonly client: MqttJsClient) {
+  private constructor(
+    private readonly client: MqttJsClient,
+    onParseError?: ParseErrorCallback,
+  ) {
     this.underlyingClient = client
     this.subscriptions = {}
+    this.onParseError = onParseError
 
     this.messageHandler = (topic, payload, packet) => {
       this._handleMessage(topic, payload, packet)
     }
     this.client.on("message", this.messageHandler)
+
+    // Prevent unhandled 'error' events from crashing the process.
+    // Consumers can listen for errors directly via client.underlyingClient.on('error', ...)
+    this.errorHandler = () => {}
+    this.client.on("error", this.errorHandler)
   }
 
   public static async connect(
@@ -97,13 +109,12 @@ export class MqttClient {
       }
     }
 
-    const { finalOptions } = processOptions(options)
+    const { finalOptions, onParseError } = processOptions(options)
 
     try {
       const mqttClient = await connectAsync(uri, finalOptions)
-      return new MqttClient(mqttClient)
+      return new MqttClient(mqttClient, onParseError)
     } catch (error) {
-      console.error(`Failed to connect to MQTT broker at ${uri}:`, error)
       throw new MqttConnectionError(
         error instanceof Error ? error.message : String(error),
         { cause: error },
@@ -402,11 +413,9 @@ export class MqttClient {
     }
 
     if (firstParsingError) {
-      const parseError = new MqttPayloadError(
-        `Payload parsing failed: ${firstParsingError.message}`,
-        { cause: firstParsingError, topic: topic, rawPayload: payload },
-      )
-      console.error("MQTT payload parse error:", parseError)
+      if (this.onParseError) {
+        this.onParseError(firstParsingError, topic, payload)
+      }
     }
   }
 
@@ -417,10 +426,8 @@ export class MqttClient {
     if (topics.length > 0) {
       try {
         await this.client.unsubscribeAsync(topics)
-      } catch (error) {
-        console.warn(
-          `Warning: Failed to unsubscribe from topics during disconnect: ${error instanceof Error ? error.message : String(error)}`,
-        )
+      } catch {
+        // Best-effort cleanup — connection may already be lost
       } finally {
         this._clearAllSubscriptions()
       }
@@ -439,6 +446,9 @@ export class MqttClient {
   private _removeAllEventListeners(): void {
     if (this.messageHandler) {
       this.client.removeListener("message", this.messageHandler)
+    }
+    if (this.errorHandler) {
+      this.client.removeListener("error", this.errorHandler)
     }
   }
 

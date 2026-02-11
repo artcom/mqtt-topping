@@ -4,6 +4,7 @@ export { HttpClient } from "./http/httpClient"
 export type {
   SubscriptionHandler,
   MessageCallback,
+  ParseErrorCallback,
   ClientOptions as MqttClientOptions,
   SubscribeOptions as MqttSubscribeOptions,
   PublishOptions as MqttPublishOptions,

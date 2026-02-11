@@ -1,5 +1,5 @@
 import { IClientOptions, Packet } from "mqtt"
-import { ClientOptions, SubscriptionHandler } from "./types"
+import { ClientOptions, ParseErrorCallback, SubscriptionHandler } from "./types"
 import { KEEP_ALIVE, CONNECT_TIMEOUT } from "../defaults"
 import { InvalidTopicError } from "../errors"
 
@@ -139,8 +139,9 @@ export function createClientId(
 
 export function processOptions(options: ClientOptions): {
   finalOptions: IClientOptions
+  onParseError?: ParseErrorCallback
 } {
-  const { appId, deviceId, clientId, will, ...rest } = options
+  const { appId, deviceId, clientId, will, onParseError, ...rest } = options
   const finalOptions: IClientOptions = {
     clientId: clientId || createClientId(appId, deviceId),
     keepalive: options.keepalive ?? KEEP_ALIVE,
@@ -148,7 +149,7 @@ export function processOptions(options: ClientOptions): {
     will: processWillMessage(will),
     ...rest,
   }
-  return { finalOptions }
+  return { finalOptions, onParseError }
 }
 
 function processWillMessage(
@@ -262,11 +263,9 @@ export function processHandlersForTopic(
           }
         }
       }
-    } catch (callbackError) {
-      console.error(
-        `Error in subscription callback for topic "${topic}":`,
-        callbackError,
-      )
+    } catch {
+      // Callback errors are the consumer's responsibility.
+      // Swallow to prevent one handler from breaking others.
     }
   }
 
