@@ -27,7 +27,7 @@ export function makeJsonQuery(topic: string): Query {
       { query: topic },
     )
   }
-  return { topic, depth: -1, flatten: false, parseJson: false }
+  return { topic, depth: -1, flatten: false, parseJson: true }
 }
 
 export function makeObject(result: TopicResult): unknown {

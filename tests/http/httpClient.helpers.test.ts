@@ -9,7 +9,7 @@ describe("HTTP Module - Helper Functions", () => {
       topic: "test/topic",
       depth: -1,
       flatten: false,
-      parseJson: false,
+      parseJson: true,
     })
   })
 

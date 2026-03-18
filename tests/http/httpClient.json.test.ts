@@ -168,4 +168,75 @@ describe("HttpClient - JSON Operations", () => {
     makeObjectSpy.mockRestore()
     queryBatchSpy.mockRestore()
   })
+
+  it("queryJson should parse nested JSON string payloads into objects", async () => {
+    // Mock the raw server response with JSON string payloads
+    const mockResult: TopicResult = {
+      topic: "json/sample",
+      children: [
+        {
+          topic: "json/sample/data",
+          payload: JSON.stringify({
+            array: ["a", "b", "c"],
+            nested1: {
+              one: 1,
+              two: 2,
+            },
+            nested2: {
+              one: 10,
+            },
+            nested3: {
+              one: 100,
+            },
+            string: "bar",
+          }),
+        },
+        {
+          topic: "json/sample/paths",
+          payload: JSON.stringify({
+            state: "status/main",
+            message: "events/update",
+            command: "commands/toggle",
+          }),
+        },
+      ],
+    }
+
+    fetchMock.mockResponseOnce(JSON.stringify(mockResult))
+
+    const data = await httpClient.queryJson("json/sample")
+
+    // Verify that nested payloads are parsed as objects, not strings
+    expect(data).toEqual({
+      data: {
+        array: ["a", "b", "c"],
+        nested1: {
+          one: 1,
+          two: 2,
+        },
+        nested2: {
+          one: 10,
+        },
+        nested3: {
+          one: 100,
+        },
+        string: "bar",
+      },
+      paths: {
+        state: "status/main",
+        message: "events/update",
+        command: "commands/toggle",
+      },
+    })
+
+    // Verify the nested objects are actual objects, not JSON strings
+    const dataAsRecord = data as Record<string, unknown>
+    expect(typeof dataAsRecord.data).toBe("object")
+    expect(typeof dataAsRecord.paths).toBe("object")
+
+    const dataNode = dataAsRecord.data as Record<string, unknown>
+    const pathsNode = dataAsRecord.paths as Record<string, unknown>
+    expect(Array.isArray(dataNode.array)).toBe(true)
+    expect(typeof pathsNode.state).toBe("string")
+  })
 })
