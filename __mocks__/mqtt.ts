@@ -41,5 +41,12 @@ export const connectAsync = jest.fn(
 )
 
 // The one deliberate cast: the double implements only what the client uses.
+//
+// Tests import this helper from "../../__mocks__/mqtt" directly, which evaluates
+// this file a second time alongside the copy Jest substitutes for "mqtt". That is
+// harmless for a pure cast, but it means `MockMqttClient` must only ever be
+// imported as a *type* (`import type`): the class object seen by a test is not the
+// one the client was constructed from, so `instanceof MockMqttClient` would be
+// false. Assert on the double's fields, never on its identity.
 export const asMock = (client: MqttClient): MockMqttClient =>
   client as unknown as MockMqttClient
