@@ -47,25 +47,25 @@ describe("MqttClient - Publishing", () => {
       await client.publish("test/defaults", { data: "value" })
 
       const [, , opts] = mock.publishAsync.mock.calls[0]
-      expect(opts.qos).toBe(2)
+      expect(opts).toMatchObject({ qos: 2 })
     })
 
     it("should correctly determine retain flag for event topics (prefix based)", async () => {
       await client.publish("some/device/onUpdate", { data: "value" })
       const [, , optsEvent] = mock.publishAsync.mock.calls[0]
-      expect(optsEvent.retain).toBe(false)
+      expect(optsEvent).toMatchObject({ retain: false })
     })
 
     it("should correctly determine retain flag for command topics (prefix based)", async () => {
       await client.publish("another/device/doRestart", { data: "value" })
       const [, , optsCmd] = mock.publishAsync.mock.calls[0]
-      expect(optsCmd.retain).toBe(false)
+      expect(optsCmd).toMatchObject({ retain: false })
     })
 
     it("should default to retain=true for regular topics", async () => {
       await client.publish("device/status", { data: "value" })
       const [, , optsRegular] = mock.publishAsync.mock.calls[0]
-      expect(optsRegular.retain).toBe(true)
+      expect(optsRegular).toMatchObject({ retain: true })
     })
   })
 

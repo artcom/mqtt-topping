@@ -92,7 +92,7 @@ describe("MqttClient - Message Handling", () => {
     it("should use custom parser with parseType='custom'", async () => {
       const callback = jest.fn()
       const customParser = jest.fn(
-        (buf: Buffer | Uint8Array) => `parsed(${buf.toString()})`,
+        (payload: unknown) => `parsed(${String(payload)})`,
       )
 
       await client.subscribe("custom/data", callback, {

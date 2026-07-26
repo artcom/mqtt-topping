@@ -357,9 +357,9 @@ describe("MQTT Helper Functions", () => {
     })
 
     it("should process custom handler correctly", () => {
-      const customParser = jest
-        .fn()
-        .mockImplementation((buf: Buffer) => `parsed:${buf.toString()}`)
+      const customParser = jest.fn(
+        (payload: unknown) => `parsed:${String(payload)}`,
+      )
       subscription.handlers[0].parseType = "custom"
       subscription.handlers[0].customParser = customParser
       const payload = Buffer.from("custom data")
