@@ -32,7 +32,11 @@ describe("MqttClient - Subscribe", () => {
       await client.subscribe("test/topic", callback2)
 
       expect(mock.subscribeAsync).toHaveBeenCalledTimes(1)
-      expect(client["subscriptions"]["test/topic"].handlers).toHaveLength(2)
+
+      // both callbacks are served by the single broker subscription
+      mock.emit("message", "test/topic", Buffer.from('{"v":1}'), {})
+      expect(callback1).toHaveBeenCalledWith({ v: 1 }, "test/topic", {})
+      expect(callback2).toHaveBeenCalledWith({ v: 1 }, "test/topic", {})
     })
 
     it("should allow passing QoS in subscribe options", async () => {

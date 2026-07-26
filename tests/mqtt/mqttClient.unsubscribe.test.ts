@@ -21,34 +21,36 @@ describe("MqttClient - Unsubscribe", () => {
       await client.subscribe("test/topic", cb1)
       await client.subscribe("test/topic", cb2)
 
-      expect(client["subscriptions"]["test/topic"].handlers).toHaveLength(2)
-
       await client.unsubscribe("test/topic", cb1)
-      expect(client["subscriptions"]["test/topic"].handlers).toHaveLength(1)
+
+      // the remaining handler keeps receiving messages, so no broker unsubscribe
       expect(mock.unsubscribeAsync).not.toHaveBeenCalled()
+      mock.emit("message", "test/topic", Buffer.from('{"v":1}'), {})
+      expect(cb1).not.toHaveBeenCalled()
+      expect(cb2).toHaveBeenCalledTimes(1)
 
       await client.unsubscribe("test/topic", cb2)
-      expect(client["subscriptions"]["test/topic"]).toBeUndefined()
+
       expect(mock.unsubscribeAsync).toHaveBeenCalledTimes(1)
       expect(mock.unsubscribeAsync).toHaveBeenCalledWith("test/topic", {
         properties: undefined,
       })
+      mock.emit("message", "test/topic", Buffer.from('{"v":2}'), {})
+      expect(cb2).toHaveBeenCalledTimes(1)
     })
 
     it("should unsubscribe from broker when removing the last handler", async () => {
       const callback = jest.fn()
 
       await client.subscribe("test/unsub", callback)
-      expect(client["subscriptions"]["test/unsub"].handlers).toHaveLength(1)
-
-      mock.unsubscribeAsync.mockClear()
 
       await client.unsubscribe("test/unsub", callback)
 
       expect(mock.unsubscribeAsync).toHaveBeenCalledWith("test/unsub", {
         properties: undefined,
       })
-      expect(client["subscriptions"]["test/unsub"]).toBeUndefined()
+      mock.emit("message", "test/unsub", Buffer.from('{"v":1}'), {})
+      expect(callback).not.toHaveBeenCalled()
     })
 
     it("should do nothing if topic does not exist", async () => {
@@ -109,9 +111,6 @@ describe("MqttClient - Unsubscribe", () => {
 
       await client.subscribe("test/force", callback1)
       await client.subscribe("test/force", callback2)
-      expect(client["subscriptions"]["test/force"].handlers).toHaveLength(2)
-
-      mock.unsubscribeAsync.mockClear()
 
       await client.forceUnsubscribe("test/force")
 
@@ -119,7 +118,11 @@ describe("MqttClient - Unsubscribe", () => {
       expect(mock.unsubscribeAsync).toHaveBeenCalledWith("test/force", {
         properties: undefined,
       })
-      expect(client["subscriptions"]["test/force"]).toBeUndefined()
+
+      // every handler for the topic is gone, not just one
+      mock.emit("message", "test/force", Buffer.from('{"v":1}'), {})
+      expect(callback1).not.toHaveBeenCalled()
+      expect(callback2).not.toHaveBeenCalled()
     })
 
     it("should pass MQTT5 properties to forceUnsubscribe", async () => {
