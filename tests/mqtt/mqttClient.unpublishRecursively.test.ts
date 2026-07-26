@@ -1,4 +1,11 @@
-import { jest, describe, it, expect, beforeEach } from "@jest/globals"
+import {
+  jest,
+  describe,
+  it,
+  expect,
+  beforeEach,
+  afterEach,
+} from "@jest/globals"
 import { MqttClient, type TopicQuerier } from "../../src"
 import { asMock, type MockMqttClient } from "../../__mocks__/mqtt"
 import type { HttpClient } from "../../src/http/httpClient"
@@ -14,6 +21,11 @@ describe("MqttClient - Recursive Unpublish", () => {
     mock = asMock(client.underlyingClient)
 
     httpStub = { query: jest.fn<HttpClient["query"]>() } satisfies TopicQuerier
+  })
+
+  // restoreMocks does not cover timers
+  afterEach(() => {
+    jest.useRealTimers()
   })
 
   it("should unpublish all discovered topics", async () => {
@@ -54,17 +66,31 @@ describe("MqttClient - Recursive Unpublish", () => {
   })
 
   it("should batch unpublish calls", async () => {
+    jest.useFakeTimers()
+
     const topics = Array.from({ length: 15 }, (_, i) => `topic/${i}`)
     const flatResults: FlatTopicResult[] = topics.map((t) => ({ topic: t }))
     httpStub.query.mockResolvedValue(flatResults)
 
     const batchSize = 5
-    await client.unpublishRecursively("root", httpStub, { batchSize })
+    const done = client.unpublishRecursively("root", httpStub, { batchSize })
+
+    // batch 1 goes out immediately, the rest wait for the default 10ms delay
+    await jest.advanceTimersByTimeAsync(0)
+    expect(mock.publishAsync).toHaveBeenCalledTimes(5)
+
+    await jest.advanceTimersByTimeAsync(10)
+    expect(mock.publishAsync).toHaveBeenCalledTimes(10)
+
+    await jest.advanceTimersByTimeAsync(10)
+    await done
 
     expect(mock.publishAsync).toHaveBeenCalledTimes(15)
   })
 
   it("should throttle unpublish calls", async () => {
+    jest.useFakeTimers()
+
     const topics = ["t1", "t2", "t3", "t4"]
     const flatResults: FlatTopicResult[] = topics.map((t) => ({ topic: t }))
     httpStub.query.mockResolvedValue(flatResults)
@@ -72,15 +98,21 @@ describe("MqttClient - Recursive Unpublish", () => {
     const batchSize = 2
     const delayMs = 100
 
-    const start = Date.now()
-    await client.unpublishRecursively("root", httpStub, {
+    const done = client.unpublishRecursively("root", httpStub, {
       batchSize,
       delayMs,
     })
-    const duration = Date.now() - start
+
+    await jest.advanceTimersByTimeAsync(0)
+    expect(mock.publishAsync).toHaveBeenCalledTimes(2)
+
+    // the second batch stays pending until the throttle delay has elapsed
+    await jest.advanceTimersByTimeAsync(delayMs - 1)
+    expect(mock.publishAsync).toHaveBeenCalledTimes(2)
+
+    await jest.advanceTimersByTimeAsync(1)
+    await done
 
     expect(mock.publishAsync).toHaveBeenCalledTimes(4)
-    // Should have waited at least once (4 items / 2 batch size = 2 chunks. 1 delay between them)
-    expect(duration).toBeGreaterThanOrEqual(delayMs - 20) // Allow some margin
   })
 })
