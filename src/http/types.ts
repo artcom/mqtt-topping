@@ -26,8 +26,7 @@ export interface ErrorResult<E = unknown> {
 }
 
 export type QueryResult<P = unknown> =
-  | TopicResult<P>
-  | Array<FlatTopicResult<P>>
+  TopicResult<P> | Array<FlatTopicResult<P>>
 
 export type BatchQueryResponse<P = unknown, E = unknown> = Array<
   TopicResult<P> | FlatTopicResult<P>[] | ErrorResult<E>
