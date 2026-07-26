@@ -23,7 +23,6 @@ describe("HttpClient - Query Operations", () => {
   beforeEach(() => {
     fetchMock.resetMocks()
     httpClient = new HttpClient("http://fake-base-url")
-    jest.restoreAllMocks()
   })
 
   it("query should call fetch and parse valid JSON response", async () => {
@@ -110,7 +109,7 @@ describe("HttpClient - Query Operations", () => {
   it("query should throw HttpRequestError on non-OK response", async () => {
     const serverError = { code: "INVALID_TOPIC", message: "Topic not found" }
 
-    const postSpy = jest.spyOn(helpers, "post").mockImplementation(() => {
+    jest.spyOn(helpers, "post").mockImplementation(() => {
       throw new HttpRequestError(
         "http://fake-base-url/query",
         404,
@@ -132,12 +131,10 @@ describe("HttpClient - Query Operations", () => {
       expect(httpError.responseBody).toEqual(serverError)
       expect(httpError.message).toContain("Status 404 - Not Found")
     }
-
-    postSpy.mockRestore()
   })
 
   it("query should throw HttpTimeoutError on timeout", async () => {
-    const postSpy = jest.spyOn(helpers, "post").mockImplementation(() => {
+    jest.spyOn(helpers, "post").mockImplementation(() => {
       throw new HttpTimeoutError(
         "http://fake-base-url/query",
         HTTP_REQUEST_TIMEOUT,
@@ -160,12 +157,10 @@ describe("HttpClient - Query Operations", () => {
         `timed out after ${HTTP_REQUEST_TIMEOUT}ms`,
       )
     }
-
-    postSpy.mockRestore()
   })
 
   it("query should throw HttpNetworkError on fetch network failure", async () => {
-    const postSpy = jest.spyOn(helpers, "post").mockImplementation(() => {
+    jest.spyOn(helpers, "post").mockImplementation(() => {
       throw new HttpNetworkError(
         "http://fake-base-url/query",
         "Failed to fetch",
@@ -185,8 +180,6 @@ describe("HttpClient - Query Operations", () => {
       expect(networkError.message).toContain("Failed to fetch")
       expect(networkError.cause).toBeInstanceOf(TypeError)
     }
-
-    postSpy.mockRestore()
   })
 
   it("query should throw HttpPayloadParseError if response JSON is invalid", async () => {
@@ -217,11 +210,9 @@ describe("HttpClient - Query Operations", () => {
       { topic: "parse/fail" },
     )
 
-    const parsePayloadsSpy = jest
-      .spyOn(helpers, "parsePayloads")
-      .mockImplementation(() => {
-        throw customError
-      })
+    jest.spyOn(helpers, "parsePayloads").mockImplementation(() => {
+      throw customError
+    })
 
     const query: Query = { topic: "parse/fail", parseJson: true }
     await expect(httpClient.query(query)).rejects.toThrow(HttpPayloadParseError)
@@ -231,8 +222,6 @@ describe("HttpClient - Query Operations", () => {
     } catch (e) {
       expect(e).toBeInstanceOf(HttpPayloadParseError)
     }
-
-    parsePayloadsSpy.mockRestore()
   })
 
   it("queryBatch should return HttpServerError for server-reported errors in batch items", async () => {
@@ -245,13 +234,11 @@ describe("HttpClient - Query Operations", () => {
     ]
     fetchMock.mockResponseOnce(JSON.stringify(mockBatchResponse))
 
-    const parsePayloadsSpy = jest
-      .spyOn(helpers, "parsePayloads")
-      .mockImplementation((result) => {
-        if (!Array.isArray(result) && result && result.topic === "ok/topic") {
-          result.payload = {}
-        }
-      })
+    jest.spyOn(helpers, "parsePayloads").mockImplementation((result) => {
+      if (!Array.isArray(result) && result && result.topic === "ok/topic") {
+        result.payload = {}
+      }
+    })
 
     const queries: Query[] = [{ topic: "ok/topic" }, { topic: "fail/topic" }]
     const results = await httpClient.queryBatch(queries)
@@ -269,8 +256,6 @@ describe("HttpClient - Query Operations", () => {
     expect(serverError.message).toContain(
       'Server reported error for topic "fail/topic": Device offline',
     )
-
-    parsePayloadsSpy.mockRestore()
   })
 
   it("queryBatch should return HttpPayloadParseError for items that fail client-side parsing", async () => {
@@ -280,23 +265,21 @@ describe("HttpClient - Query Operations", () => {
     ]
     fetchMock.mockResponseOnce(JSON.stringify(mockBatchResponse))
 
-    const parsePayloadsSpy = jest
-      .spyOn(helpers, "parsePayloads")
-      .mockImplementation((result) => {
-        if (Array.isArray(result)) return
+    jest.spyOn(helpers, "parsePayloads").mockImplementation((result) => {
+      if (Array.isArray(result)) return
 
-        if (!Array.isArray(result) && result && result.topic === "good/parse") {
-          result.payload = { a: 1 }
-          return
-        }
+      if (!Array.isArray(result) && result && result.topic === "good/parse") {
+        result.payload = { a: 1 }
+        return
+      }
 
-        if (!Array.isArray(result) && result && result.topic === "bad/parse") {
-          throw new HttpPayloadParseError(
-            "Failed to parse JSON payload: Unexpected token i in JSON at position 1",
-            { topic: "bad/parse" },
-          )
-        }
-      })
+      if (!Array.isArray(result) && result && result.topic === "bad/parse") {
+        throw new HttpPayloadParseError(
+          "Failed to parse JSON payload: Unexpected token i in JSON at position 1",
+          { topic: "bad/parse" },
+        )
+      }
+    })
 
     const queries: Query[] = [
       { topic: "good/parse", parseJson: true },
@@ -311,8 +294,6 @@ describe("HttpClient - Query Operations", () => {
     const parseError = results[1] as HttpPayloadParseError
     expect(parseError.topic).toBe("bad/parse")
     expect(parseError.message).toContain("Failed to parse JSON payload")
-
-    parsePayloadsSpy.mockRestore()
   })
 
   it("should use custom request timeout when configured", async () => {
@@ -346,7 +327,5 @@ describe("HttpClient - Query Operations", () => {
       { topic: "custom/timeout" },
       customTimeout,
     )
-
-    postSpy.mockRestore()
   })
 })

@@ -9,7 +9,6 @@ describe("MqttClient - Message Handling", () => {
   let onParseError: jest.Mock
 
   beforeEach(async () => {
-    jest.clearAllMocks()
     onParseError = jest.fn()
     await connectMock("mqtt://dummy")
     client = await MqttClient.connect("mqtt://dummy", { onParseError })

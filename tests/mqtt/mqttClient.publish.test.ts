@@ -14,7 +14,6 @@ describe("MqttClient - Publishing", () => {
   let client: MqttClient
 
   beforeEach(async () => {
-    jest.clearAllMocks()
     mockMqttClient = await connectMock("mqtt://dummy")
     client = await MqttClient.connect("mqtt://dummy")
   })

@@ -11,7 +11,6 @@ describe("MqttClient - Recursive Unpublish", () => {
   let mockHttpClient: jest.Mocked<HttpClient>
 
   beforeEach(async () => {
-    jest.clearAllMocks()
     mockMqttClient = await connectMock("mqtt://dummy")
     client = await MqttClient.connect("mqtt://dummy")
 

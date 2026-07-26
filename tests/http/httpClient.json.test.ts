@@ -15,7 +15,6 @@ describe("HttpClient - JSON Operations", () => {
   beforeEach(() => {
     fetchMock.resetMocks()
     httpClient = new HttpClient("http://fake-base-url")
-    jest.restoreAllMocks()
   })
 
   it("queryJson should fetch, parse, and build object", async () => {
@@ -32,11 +31,9 @@ describe("HttpClient - JSON Operations", () => {
 
     fetchMock.mockResponseOnce(JSON.stringify(mockResult))
 
-    const makeObjectSpy = jest
-      .spyOn(helpers, "makeObject")
-      .mockImplementation(() => {
-        return { child: { nested: true } }
-      })
+    jest.spyOn(helpers, "makeObject").mockImplementation(() => {
+      return { child: { nested: true } }
+    })
 
     const data = await httpClient.queryJson("json/parent")
 
@@ -50,22 +47,18 @@ describe("HttpClient - JSON Operations", () => {
     })
 
     expect(data).toEqual({ child: { nested: true } })
-
-    makeObjectSpy.mockRestore()
   })
 
   it("queryJsonBatch should handle multiple successful JSON queries", async () => {
-    const makeObjectSpy = jest
+    jest
       .spyOn(helpers, "makeObject")
       .mockImplementationOnce(() => ({ val: 1 }))
       .mockImplementationOnce(() => ({ child: "B" }))
 
-    const queryBatchSpy = jest
-      .spyOn(httpClient, "queryBatch")
-      .mockResolvedValue([
-        { topic: "json/a", payload: { val: 1 } },
-        { topic: "json/b", payload: { child: "B" } },
-      ])
+    jest.spyOn(httpClient, "queryBatch").mockResolvedValue([
+      { topic: "json/a", payload: { val: 1 } },
+      { topic: "json/b", payload: { child: "B" } },
+    ])
 
     const topics = ["json/a", "json/b"]
     const results = await httpClient.queryJsonBatch(topics)
@@ -73,9 +66,6 @@ describe("HttpClient - JSON Operations", () => {
     expect(results).toHaveLength(2)
     expect(results[0]).toEqual({ val: 1 })
     expect(results[1]).toEqual({ child: "B" })
-
-    makeObjectSpy.mockRestore()
-    queryBatchSpy.mockRestore()
   })
 
   it("queryJson should throw HttpQueryError for wildcards", async () => {
@@ -99,17 +89,13 @@ describe("HttpClient - JSON Operations", () => {
       { topic: "processing/fail" },
     )
 
-    const makeObjectSpy = jest
-      .spyOn(helpers, "makeObject")
-      .mockImplementation(() => {
-        throw customError
-      })
+    jest.spyOn(helpers, "makeObject").mockImplementation(() => {
+      throw customError
+    })
 
     await expect(httpClient.queryJson("processing/fail")).rejects.toThrow(
       HttpProcessingError,
     )
-
-    makeObjectSpy.mockRestore()
   })
 
   it("queryJsonBatch should return HttpQueryError if a topic has wildcards", async () => {
@@ -127,7 +113,7 @@ describe("HttpClient - JSON Operations", () => {
 
     fetchMock.mockResponseOnce(JSON.stringify(mockBatchResponseForJsonBatch))
 
-    const queryBatchSpy = jest
+    jest
       .spyOn(httpClient, "queryBatch")
       .mockResolvedValue([
         { topic: "json/ok", payload: JSON.stringify({ val: 1 }) },
@@ -135,7 +121,7 @@ describe("HttpClient - JSON Operations", () => {
         { topic: "json/makeObjErr", payload: JSON.stringify({}) },
       ])
 
-    const makeObjectSpy = jest
+    jest
       .spyOn(helpers, "makeObject")
       .mockImplementation((result: TopicResult) => {
         if (result.topic === "json/ok") {
@@ -164,9 +150,6 @@ describe("HttpClient - JSON Operations", () => {
     expect((results[2] as HttpProcessingError).message).toContain(
       "makeObject failed test",
     )
-
-    makeObjectSpy.mockRestore()
-    queryBatchSpy.mockRestore()
   })
 
   it("queryJson should parse nested JSON string payloads into objects", async () => {
