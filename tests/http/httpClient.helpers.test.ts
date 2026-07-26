@@ -137,7 +137,9 @@ describe("HTTP Module - Helper Functions", () => {
       if (e instanceof HttpPayloadParseError) {
         expect(e.topic).toBe("item/bad")
       } else {
-        throw new Error("Caught unexpected error type in parsePayloads test")
+        throw new Error("Caught unexpected error type in parsePayloads test", {
+          cause: e,
+        })
       }
     }
   })

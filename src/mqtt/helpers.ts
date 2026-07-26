@@ -49,8 +49,7 @@ export function matchTopic(subscription: string): (topic: string) => boolean {
 }
 
 type ParseResult =
-  | { ok: true; value: unknown }
-  | { ok: false; error: SyntaxError | null }
+  { ok: true; value: unknown } | { ok: false; error: SyntaxError | null }
 
 export function parsePayload(payload: Buffer | Uint8Array): ParseResult {
   if (payload == null) {
