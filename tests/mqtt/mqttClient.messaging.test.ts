@@ -1,18 +1,17 @@
+import { jest, describe, it, expect, beforeEach } from "@jest/globals"
 import { Packet } from "mqtt"
 import { MqttClient } from "../../src"
-import * as mqtt from "mqtt"
-
-const connectMock = jest.mocked(mqtt.connectAsync)
+import { asMock, type MockMqttClient } from "../../__mocks__/mqtt"
 
 describe("MqttClient - Message Handling", () => {
   let client: MqttClient
+  let mock: MockMqttClient
   let onParseError: jest.Mock
 
   beforeEach(async () => {
-    jest.clearAllMocks()
     onParseError = jest.fn()
-    await connectMock("mqtt://dummy")
     client = await MqttClient.connect("mqtt://dummy", { onParseError })
+    mock = asMock(client.underlyingClient)
   })
 
   describe("Payload parsing", () => {
@@ -24,8 +23,7 @@ describe("MqttClient - Message Handling", () => {
       const payload = Buffer.from(JSON.stringify(payloadObj))
       const pkt = {} as Packet
 
-      // @ts-expect-error Accessing private method for testing
-      client._handleMessage("default/json", payload, pkt)
+      mock.deliver("default/json", payload, pkt)
 
       expect(callback).toHaveBeenCalledTimes(1)
       expect(callback).toHaveBeenCalledWith(payloadObj, "default/json", pkt)
@@ -39,8 +37,7 @@ describe("MqttClient - Message Handling", () => {
       const payload = Buffer.from(JSON.stringify(payloadObj))
       const pkt = {} as Packet
 
-      // @ts-expect-error Accessing private method for testing
-      client._handleMessage("json/topic", payload, pkt)
+      mock.deliver("json/topic", payload, pkt)
 
       expect(callback).toHaveBeenCalledTimes(1)
       expect(callback).toHaveBeenCalledWith(payloadObj, "json/topic", pkt)
@@ -52,8 +49,7 @@ describe("MqttClient - Message Handling", () => {
 
       const payload = Buffer.from("some text data")
 
-      // @ts-expect-error Accessing private method for testing
-      client._handleMessage("text/plain", payload, {} as Packet)
+      mock.deliver("text/plain", payload)
 
       expect(callback).toHaveBeenCalledTimes(1)
       expect(callback).toHaveBeenCalledWith("some text data", "text/plain", {})
@@ -65,8 +61,7 @@ describe("MqttClient - Message Handling", () => {
 
       const payload = Buffer.from([0xde, 0xad, 0xbe, 0xef])
 
-      // @ts-expect-error Accessing private method for testing
-      client._handleMessage("binary/data", payload, {} as Packet)
+      mock.deliver("binary/data", payload)
 
       expect(callback).toHaveBeenCalledTimes(1)
       expect(callback.mock.calls[0][0]).toEqual(payload)
@@ -83,8 +78,7 @@ describe("MqttClient - Message Handling", () => {
 
       const payload = Buffer.from('{"test":123}')
 
-      // @ts-expect-error Accessing private method for testing
-      client._handleMessage("update/parsing", payload, {} as Packet)
+      mock.deliver("update/parsing", payload)
 
       expect(callback).toHaveBeenCalledWith(
         '{"test":123}',
@@ -97,9 +91,9 @@ describe("MqttClient - Message Handling", () => {
   describe("Custom parsing", () => {
     it("should use custom parser with parseType='custom'", async () => {
       const callback = jest.fn()
-      const customParser = jest
-        .fn()
-        .mockImplementation((buf: Buffer) => `parsed(${buf.toString()})`)
+      const customParser = jest.fn(
+        (payload: unknown) => `parsed(${String(payload)})`,
+      )
 
       await client.subscribe("custom/data", callback, {
         parseType: "custom",
@@ -109,8 +103,7 @@ describe("MqttClient - Message Handling", () => {
       const payload = Buffer.from("custom format")
       const pkt = {} as Packet
 
-      // @ts-expect-error Accessing private method for testing
-      client._handleMessage("custom/data", payload, pkt)
+      mock.deliver("custom/data", payload, pkt)
 
       expect(customParser).toHaveBeenCalledWith(payload)
       expect(callback).toHaveBeenCalledTimes(1)
@@ -133,8 +126,7 @@ describe("MqttClient - Message Handling", () => {
       const invalidPayload = Buffer.from("{not valid JSON}")
       const pkt = {} as Packet
 
-      // @ts-expect-error Accessing private method for testing
-      client._handleMessage("json/invalid", invalidPayload, pkt)
+      mock.deliver("json/invalid", invalidPayload, pkt)
 
       expect(mainCallback).not.toHaveBeenCalled()
       expect(onParseError).toHaveBeenCalledTimes(1)
@@ -161,8 +153,7 @@ describe("MqttClient - Message Handling", () => {
       const payload = Buffer.from("bad custom data")
       const pkt = {} as Packet
 
-      // @ts-expect-error Accessing private method for testing
-      client._handleMessage("custom/fail", payload, pkt)
+      mock.deliver("custom/fail", payload, pkt)
 
       expect(callback).not.toHaveBeenCalled()
       expect(onParseError).toHaveBeenCalledTimes(1)
@@ -185,8 +176,7 @@ describe("MqttClient - Message Handling", () => {
 
       // Should not throw - errors go to onParseError callback
       expect(() =>
-        // @ts-expect-error Accessing private method for testing
-        client._handleMessage("error/in/handler", invalidPayload, pkt),
+        mock.deliver("error/in/handler", invalidPayload, pkt),
       ).not.toThrow()
 
       expect(callback).not.toHaveBeenCalled()
@@ -195,6 +185,7 @@ describe("MqttClient - Message Handling", () => {
 
     it("should silently handle parse errors when no onParseError is provided", async () => {
       const clientNoHandler = await MqttClient.connect("mqtt://dummy")
+      const mockNoHandler = asMock(clientNoHandler.underlyingClient)
       const callback = jest.fn()
 
       await clientNoHandler.subscribe("json/silent", callback, {
@@ -205,12 +196,7 @@ describe("MqttClient - Message Handling", () => {
 
       // Should not throw even without onParseError
       expect(() =>
-        // @ts-expect-error Accessing private method for testing
-        clientNoHandler._handleMessage(
-          "json/silent",
-          invalidPayload,
-          {} as Packet,
-        ),
+        mockNoHandler.deliver("json/silent", invalidPayload),
       ).not.toThrow()
 
       expect(callback).not.toHaveBeenCalled()
@@ -223,13 +209,10 @@ describe("MqttClient - Message Handling", () => {
         parseType: "string",
       })
 
-      // @ts-expect-error Accessing private method for testing
-      client._handleMessage(
-        "random/unsubscribed",
-        Buffer.from("test"),
-        {} as Packet,
+      // the client receives the message, no subscription pattern matches it
+      expect(mock.deliver("random/unsubscribed", Buffer.from("test"))).toBe(
+        true,
       )
-
       expect(callback).not.toHaveBeenCalled()
     })
 
@@ -245,8 +228,7 @@ describe("MqttClient - Message Handling", () => {
       const pkt = {} as Packet
       const payload = Buffer.from("lights on")
 
-      // @ts-expect-error Accessing private method for testing
-      client._handleMessage("home/livingroom", payload, pkt)
+      mock.deliver("home/livingroom", payload, pkt)
 
       expect(cbExact).toHaveBeenCalledTimes(1)
       expect(cbExact).toHaveBeenCalledWith("lights on", "home/livingroom", pkt)
@@ -262,12 +244,7 @@ describe("MqttClient - Message Handling", () => {
       const callback = jest.fn()
       await client.subscribe("devices/#", callback, { parseType: "string" })
 
-      // @ts-expect-error Accessing private method for testing
-      client._handleMessage(
-        "devices/livingroom/temp",
-        Buffer.from("22C"),
-        {} as Packet,
-      )
+      mock.deliver("devices/livingroom/temp", Buffer.from("22C"))
 
       expect(callback).toHaveBeenCalledWith(
         "22C",
@@ -282,25 +259,10 @@ describe("MqttClient - Message Handling", () => {
         parseType: "string",
       })
 
-      // @ts-expect-error Accessing private method for testing
-      client._handleMessage(
-        "devices/livingroom/temp",
-        Buffer.from("22C"),
-        {} as Packet,
-      )
-      // @ts-expect-error Accessing private method for testing
-      client._handleMessage(
-        "devices/kitchen/temp",
-        Buffer.from("24C"),
-        {} as Packet,
-      )
+      mock.deliver("devices/livingroom/temp", Buffer.from("22C"))
+      mock.deliver("devices/kitchen/temp", Buffer.from("24C"))
       // Non-matching path
-      // @ts-expect-error Accessing private method for testing
-      client._handleMessage(
-        "devices/livingroom/humidity",
-        Buffer.from("45%"),
-        {} as Packet,
-      )
+      mock.deliver("devices/livingroom/humidity", Buffer.from("45%"))
 
       expect(callback).toHaveBeenCalledTimes(2)
       expect(callback).toHaveBeenCalledWith(
@@ -317,24 +279,9 @@ describe("MqttClient - Message Handling", () => {
         parseType: "string",
       })
 
-      // @ts-expect-error Accessing private method for testing
-      client._handleMessage(
-        "home/first/livingroom/temp",
-        Buffer.from("22C"),
-        {} as Packet,
-      )
-      // @ts-expect-error Accessing private method for testing
-      client._handleMessage(
-        "office/second/livingroom/lights",
-        Buffer.from("on"),
-        {} as Packet,
-      )
-      // @ts-expect-error Accessing private method for testing
-      client._handleMessage(
-        "home/first/bedroom/temp",
-        Buffer.from("20C"),
-        {} as Packet,
-      )
+      mock.deliver("home/first/livingroom/temp", Buffer.from("22C"))
+      mock.deliver("office/second/livingroom/lights", Buffer.from("on"))
+      mock.deliver("home/first/bedroom/temp", Buffer.from("20C"))
 
       expect(callback).toHaveBeenCalledWith(
         "22C",

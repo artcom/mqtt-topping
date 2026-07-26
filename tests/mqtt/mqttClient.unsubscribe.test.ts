@@ -1,19 +1,19 @@
-import { MqttClient as MqttJsClient } from "mqtt"
+import { jest, describe, it, expect, beforeEach } from "@jest/globals"
 import { MqttClient } from "../../src"
-import { InvalidTopicError } from "../../src/errors"
-import * as mqtt from "mqtt"
-import { MqttUsageError } from "../../src/errors"
-
-const connectMock = jest.mocked(mqtt.connectAsync)
+import { asMock, type MockMqttClient } from "../../__mocks__/mqtt"
+import {
+  InvalidTopicError,
+  MqttUnsubscribeError,
+  MqttUsageError,
+} from "../../src/errors"
 
 describe("MqttClient - Unsubscribe", () => {
-  let mockMqttClient: jest.Mocked<Partial<MqttJsClient>>
+  let mock: MockMqttClient
   let client: MqttClient
 
   beforeEach(async () => {
-    jest.clearAllMocks()
-    mockMqttClient = await connectMock("mqtt://dummy")
     client = await MqttClient.connect("mqtt://dummy")
+    mock = asMock(client.underlyingClient)
   })
 
   describe("Standard unsubscribe", () => {
@@ -24,41 +24,47 @@ describe("MqttClient - Unsubscribe", () => {
       await client.subscribe("test/topic", cb1)
       await client.subscribe("test/topic", cb2)
 
-      expect(client["subscriptions"]["test/topic"].handlers).toHaveLength(2)
-
       await client.unsubscribe("test/topic", cb1)
-      expect(client["subscriptions"]["test/topic"].handlers).toHaveLength(1)
-      expect(mockMqttClient.unsubscribeAsync).not.toHaveBeenCalled()
+
+      // the remaining handler keeps receiving messages, so no broker unsubscribe
+      expect(mock.unsubscribeAsync).not.toHaveBeenCalled()
+      mock.deliver("test/topic", Buffer.from('{"v":1}'))
+      expect(cb1).not.toHaveBeenCalled()
+      expect(cb2).toHaveBeenCalledTimes(1)
 
       await client.unsubscribe("test/topic", cb2)
-      expect(client["subscriptions"]["test/topic"]).toBeUndefined()
-      expect(mockMqttClient.unsubscribeAsync).toHaveBeenCalledTimes(1)
-      expect(mockMqttClient.unsubscribeAsync).toHaveBeenCalledWith(
-        "test/topic",
-        { properties: undefined },
-      )
+
+      expect(mock.unsubscribeAsync).toHaveBeenCalledTimes(1)
+      expect(mock.unsubscribeAsync).toHaveBeenCalledWith("test/topic", {
+        properties: undefined,
+      })
+      mock.deliver("test/topic", Buffer.from('{"v":2}'))
+      expect(cb2).toHaveBeenCalledTimes(1)
     })
 
     it("should unsubscribe from broker when removing the last handler", async () => {
       const callback = jest.fn()
 
       await client.subscribe("test/unsub", callback)
-      expect(client["subscriptions"]["test/unsub"].handlers).toHaveLength(1)
-
-      jest.mocked(mockMqttClient.unsubscribeAsync!).mockClear()
 
       await client.unsubscribe("test/unsub", callback)
 
-      expect(mockMqttClient.unsubscribeAsync).toHaveBeenCalledWith(
-        "test/unsub",
-        { properties: undefined },
-      )
-      expect(client["subscriptions"]["test/unsub"]).toBeUndefined()
+      expect(mock.unsubscribeAsync).toHaveBeenCalledWith("test/unsub", {
+        properties: undefined,
+      })
+      // the message still reaches the client, it just has no handler left for it
+      expect(mock.deliver("test/unsub", Buffer.from('{"v":1}'))).toBe(true)
+      expect(callback).not.toHaveBeenCalled()
+
+      // the topic was dropped rather than left with an empty handler list, so
+      // re-subscribing has to hit the broker again
+      await client.subscribe("test/unsub", callback)
+      expect(mock.subscribeAsync).toHaveBeenCalledTimes(2)
     })
 
     it("should do nothing if topic does not exist", async () => {
       await client.unsubscribe("non-existent", jest.fn())
-      expect(mockMqttClient.unsubscribeAsync).not.toHaveBeenCalled()
+      expect(mock.unsubscribeAsync).not.toHaveBeenCalled()
     })
 
     it("should pass MQTT5 properties to unsubscribeAsync", async () => {
@@ -73,7 +79,7 @@ describe("MqttClient - Unsubscribe", () => {
 
       await client.unsubscribe("test/mqtt5/unsub", callback, mqttProperties)
 
-      expect(mockMqttClient.unsubscribeAsync).toHaveBeenCalledWith(
+      expect(mock.unsubscribeAsync).toHaveBeenCalledWith(
         "test/mqtt5/unsub",
         mqttProperties,
       )
@@ -102,8 +108,22 @@ describe("MqttClient - Unsubscribe", () => {
     })
 
     it("should throw MqttUnsubscribeError when unsubscribeAsync fails", async () => {
-      // Skip mock testing for simplicity
-      expect(true).toBe(true)
+      const callback = jest.fn()
+      await client.subscribe("test/unsub/fails", callback)
+
+      const brokerError = new Error("Broker rejected unsubscribe")
+      mock.unsubscribeAsync.mockRejectedValueOnce(brokerError)
+
+      // captured rather than asserted with rejects.*, because toMatchObject and
+      // toHaveProperty compare structurally and cannot pin cause to the very
+      // error the broker threw
+      const failure = await client
+        .unsubscribe("test/unsub/fails", callback)
+        .catch((error: unknown) => error)
+
+      expect(failure).toBeInstanceOf(MqttUnsubscribeError)
+      expect((failure as MqttUnsubscribeError).cause).toBe(brokerError)
+      expect((failure as MqttUnsubscribeError).topic).toBe("test/unsub/fails")
     })
   })
 
@@ -114,18 +134,23 @@ describe("MqttClient - Unsubscribe", () => {
 
       await client.subscribe("test/force", callback1)
       await client.subscribe("test/force", callback2)
-      expect(client["subscriptions"]["test/force"].handlers).toHaveLength(2)
-
-      jest.mocked(mockMqttClient.unsubscribeAsync!).mockClear()
 
       await client.forceUnsubscribe("test/force")
 
-      expect(mockMqttClient.unsubscribeAsync).toHaveBeenCalledTimes(1)
-      expect(mockMqttClient.unsubscribeAsync).toHaveBeenCalledWith(
-        "test/force",
-        { properties: undefined },
-      )
-      expect(client["subscriptions"]["test/force"]).toBeUndefined()
+      expect(mock.unsubscribeAsync).toHaveBeenCalledTimes(1)
+      expect(mock.unsubscribeAsync).toHaveBeenCalledWith("test/force", {
+        properties: undefined,
+      })
+
+      // every handler for the topic is gone, not just one
+      expect(mock.deliver("test/force", Buffer.from('{"v":1}'))).toBe(true)
+      expect(callback1).not.toHaveBeenCalled()
+      expect(callback2).not.toHaveBeenCalled()
+
+      // the topic was dropped rather than left with an empty handler list, so
+      // re-subscribing has to hit the broker again
+      await client.subscribe("test/force", callback1)
+      expect(mock.subscribeAsync).toHaveBeenCalledTimes(2)
     })
 
     it("should pass MQTT5 properties to forceUnsubscribe", async () => {
@@ -140,7 +165,7 @@ describe("MqttClient - Unsubscribe", () => {
 
       await client.forceUnsubscribe("test/mqtt5/force", mqttProperties)
 
-      expect(mockMqttClient.unsubscribeAsync).toHaveBeenCalledWith(
+      expect(mock.unsubscribeAsync).toHaveBeenCalledWith(
         "test/mqtt5/force",
         mqttProperties,
       )
@@ -148,7 +173,7 @@ describe("MqttClient - Unsubscribe", () => {
 
     it("should do nothing if topic does not exist", async () => {
       await client.forceUnsubscribe("non-existent")
-      expect(mockMqttClient.unsubscribeAsync).not.toHaveBeenCalled()
+      expect(mock.unsubscribeAsync).not.toHaveBeenCalled()
     })
 
     it("should throw InvalidTopicError for invalid topics", async () => {
@@ -158,8 +183,21 @@ describe("MqttClient - Unsubscribe", () => {
     })
 
     it("should throw MqttUnsubscribeError when unsubscribeAsync fails during force unsubscribe", async () => {
-      // Skip mock testing for simplicity
-      expect(true).toBe(true)
+      const callback = jest.fn()
+      await client.subscribe("test/force/fails", callback)
+
+      const brokerError = new Error("Broker rejected unsubscribe")
+      mock.unsubscribeAsync.mockRejectedValueOnce(brokerError)
+
+      const failure = await client
+        .forceUnsubscribe("test/force/fails")
+        .catch((error: unknown) => error)
+
+      expect(failure).toBeInstanceOf(MqttUnsubscribeError)
+      expect((failure as MqttUnsubscribeError).message).toMatch(
+        /forceUnsubscribe failed/,
+      )
+      expect((failure as MqttUnsubscribeError).cause).toBe(brokerError)
     })
   })
 })

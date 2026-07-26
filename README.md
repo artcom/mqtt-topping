@@ -45,6 +45,7 @@ By convention, topics starting with `on` or `do` followed by an uppercase letter
   - [Publishing](#publishing)
   - [Unsubscribing](#unsubscribing)
   - [Clearing Retained Messages (`unpublish`)](#clearing-retained-messages-unpublish)
+  - [Clearing a Topic Tree (`unpublishRecursively`)](#clearing-a-topic-tree-unpublishrecursively)
   - [Payload Parsing (`parseType`)](#payload-parsing-parsetype)
   - [Error Handling (`onParseError` & Async Errors)](#error-handling-onparseerror--async-errors)
   - [Disconnecting](#disconnecting)
@@ -465,6 +466,29 @@ Publish an empty message with the retain flag set to true (using QoS 2 by defaul
 
 ```typescript
 await client.unpublish("device/status") // Clear retained status
+```
+
+### Clearing a Topic Tree (`unpublishRecursively`)
+
+Discovers every retained topic below a given topic via an HTTP query, then unpublishes each one. Publishing is batched and throttled so a large tree does not flood the broker.
+
+```typescript
+await client.unpublishRecursively("device", httpClient, {
+  batchSize: 100, // topics unpublished per batch (default: 100)
+  delayMs: 10, // pause between batches (default: 10)
+})
+```
+
+The second argument only needs a `query` method, described by the exported `TopicQuerier` type. An `HttpClient` satisfies it, and so does any stand-in you supply:
+
+```typescript
+import type { TopicQuerier } from "@artcom/mqtt-topping"
+
+const querier: TopicQuerier = {
+  query: async () => [{ topic: "device/status" }],
+}
+
+await client.unpublishRecursively("device", querier)
 ```
 
 ### Payload Parsing (`parseType`)

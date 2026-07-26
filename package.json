@@ -31,7 +31,7 @@
     "lint": "eslint .",
     "prepublishOnly": "npm run lint && npm test && npm run build",
     "test": "jest",
-    "type-check": "tsc --noEmit",
+    "type-check": "tsc --noEmit && tsc --noEmit -p tsconfig.tests.json",
     "watch": "tsc -w",
     "prepare": "husky"
   },
@@ -41,13 +41,11 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@types/jest": "^30.0.0",
     "@types/node": "^24.10.1",
     "eslint": "^10.8.0",
     "eslint-config-prettier": "^10.1.8",
     "husky": "^9.1.7",
     "jest": "^30.2.0",
-    "jest-fetch-mock": "^4.2.0",
     "lint-staged": "^17.2.0",
     "prettier": "3.9.6",
     "ts-jest": "^29.4.6",

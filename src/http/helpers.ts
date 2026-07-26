@@ -140,13 +140,28 @@ export async function post<T>(
 ): Promise<T> {
   const url = `${baseUrl}${path}`
 
+  // Serialized up front so that a failure here is unambiguously a bad request
+  // body rather than a transport problem. JSON.stringify throws a TypeError for
+  // circular structures and BigInt, so it cannot be told apart from a genuine
+  // fetch TypeError once both are caught by the same handler. Mirrors the
+  // previous inline behaviour: an undefined body stays undefined.
+  let payload: string | undefined
+  try {
+    payload = JSON.stringify(body)
+  } catch (error) {
+    throw new HttpQueryError(
+      `Failed to stringify request body: ${errorMessage(error)}`,
+      { cause: error, query: body },
+    )
+  }
+
   let response: Response | undefined
 
   try {
     response = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
+      body: payload,
       signal: AbortSignal.timeout(timeoutMs),
     })
 
@@ -187,19 +202,12 @@ export async function post<T>(
       throw error
     }
 
-    if (error instanceof Error) {
-      if (error.name === "AbortError") {
-        throw new HttpTimeoutError(url, timeoutMs, { cause: error })
-      }
-      if (
-        error instanceof SyntaxError &&
-        error.message.includes("JSON.stringify")
-      ) {
-        throw new HttpQueryError(
-          `Failed to stringify request body: ${error.message}`,
-          { cause: error, query: body },
-        )
-      }
+    // AbortSignal.timeout() aborts with a "TimeoutError", a manual abort with
+    // an "AbortError". Both arrive as a DOMException, which is not reliably
+    // `instanceof Error` across realms, so match on the name alone.
+    const name = (error as { name?: unknown } | null | undefined)?.name
+    if (name === "AbortError" || name === "TimeoutError") {
+      throw new HttpTimeoutError(url, timeoutMs, { cause: error })
     }
 
     throw new HttpNetworkError(url, errorMessage(error), { cause: error })

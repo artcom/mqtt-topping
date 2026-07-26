@@ -1,19 +1,19 @@
-import { MqttClient as MqttJsClient } from "mqtt"
+import { jest, describe, it, expect, beforeEach } from "@jest/globals"
 import { MqttClient } from "../../src"
-import { InvalidTopicError } from "../../src/errors"
-import * as mqtt from "mqtt"
-import { MqttUsageError } from "../../src/errors"
-
-const connectMock = jest.mocked(mqtt.connectAsync)
+import { asMock, type MockMqttClient } from "../../__mocks__/mqtt"
+import {
+  InvalidTopicError,
+  MqttSubscribeError,
+  MqttUsageError,
+} from "../../src/errors"
 
 describe("MqttClient - Subscribe", () => {
-  let mockMqttClient: jest.Mocked<Partial<MqttJsClient>>
+  let mock: MockMqttClient
   let client: MqttClient
 
   beforeEach(async () => {
-    jest.clearAllMocks()
-    mockMqttClient = await connectMock("mqtt://dummy")
     client = await MqttClient.connect("mqtt://dummy")
+    mock = asMock(client.underlyingClient)
   })
 
   describe("Basic functionality", () => {
@@ -21,8 +21,8 @@ describe("MqttClient - Subscribe", () => {
       const callback = jest.fn()
       await client.subscribe("test/topic", callback)
 
-      expect(mockMqttClient.subscribeAsync).toHaveBeenCalledTimes(1)
-      expect(mockMqttClient.subscribeAsync).toHaveBeenCalledWith("test/topic", {
+      expect(mock.subscribeAsync).toHaveBeenCalledTimes(1)
+      expect(mock.subscribeAsync).toHaveBeenCalledWith("test/topic", {
         qos: 2,
       })
     })
@@ -34,15 +34,19 @@ describe("MqttClient - Subscribe", () => {
       await client.subscribe("test/topic", callback1)
       await client.subscribe("test/topic", callback2)
 
-      expect(mockMqttClient.subscribeAsync).toHaveBeenCalledTimes(1)
-      expect(client["subscriptions"]["test/topic"].handlers).toHaveLength(2)
+      expect(mock.subscribeAsync).toHaveBeenCalledTimes(1)
+
+      // both callbacks are served by the single broker subscription
+      mock.deliver("test/topic", Buffer.from('{"v":1}'))
+      expect(callback1).toHaveBeenCalledWith({ v: 1 }, "test/topic", {})
+      expect(callback2).toHaveBeenCalledWith({ v: 1 }, "test/topic", {})
     })
 
     it("should allow passing QoS in subscribe options", async () => {
       const callback = jest.fn()
       await client.subscribe("test/qos", callback, { qos: 1 })
 
-      expect(mockMqttClient.subscribeAsync).toHaveBeenCalledWith("test/qos", {
+      expect(mock.subscribeAsync).toHaveBeenCalledWith("test/qos", {
         qos: 1,
       })
     })
@@ -73,8 +77,27 @@ describe("MqttClient - Subscribe", () => {
     })
 
     it("should handle errors from subscribeAsync and clean up on failure", async () => {
-      // Skipping test that relies on mocking implementation details
-      expect(true).toBe(true)
+      const brokerError = new Error("Broker rejected subscription")
+      mock.subscribeAsync.mockRejectedValueOnce(brokerError)
+
+      const callback = jest.fn()
+      // captured rather than asserted with rejects.*, because toMatchObject and
+      // toHaveProperty compare structurally and cannot pin cause to the very
+      // error the broker threw
+      const failure = await client
+        .subscribe("test/fails", callback)
+        .catch((error: unknown) => error)
+
+      expect(failure).toBeInstanceOf(MqttSubscribeError)
+      expect((failure as MqttSubscribeError).cause).toBe(brokerError)
+      expect((failure as MqttSubscribeError).topic).toBe("test/fails")
+
+      // the failed subscription was rolled back, so a retry hits the broker again
+      await client.subscribe("test/fails", callback)
+
+      expect(mock.subscribeAsync).toHaveBeenCalledTimes(2)
+      mock.deliver("test/fails", Buffer.from('{"v":1}'))
+      expect(callback).toHaveBeenCalledWith({ v: 1 }, "test/fails", {})
     })
   })
 
@@ -93,7 +116,7 @@ describe("MqttClient - Subscribe", () => {
         ...mqttProperties,
       })
 
-      expect(mockMqttClient.subscribeAsync).toHaveBeenCalledWith("test/mqtt5", {
+      expect(mock.subscribeAsync).toHaveBeenCalledWith("test/mqtt5", {
         qos: 1,
         properties: mqttProperties.properties,
       })

@@ -1,3 +1,4 @@
+import { describe, it, expect } from "@jest/globals"
 import * as helpers from "../../src/http/helpers"
 import { TopicResult, FlatTopicResult } from "../../src/http/types"
 import { HttpQueryError, HttpPayloadParseError } from "../../src/errors"
@@ -142,5 +143,35 @@ describe("HTTP Module - Helper Functions", () => {
         })
       }
     }
+  })
+
+  describe("post", () => {
+    it("should throw HttpQueryError for a body that cannot be serialized", async () => {
+      const circular: Record<string, unknown> = { topic: "some/topic" }
+      circular.self = circular
+
+      const failed = helpers.post(
+        "http://fake-base-url",
+        "/query",
+        circular,
+        50,
+      )
+
+      // not an HttpNetworkError: nothing was ever sent
+      await expect(failed).rejects.toThrow(HttpQueryError)
+      await expect(failed).rejects.toThrow(/Failed to stringify request body/)
+      await expect(failed).rejects.toHaveProperty("query", circular)
+    })
+
+    it("should throw HttpQueryError for a BigInt in the body", async () => {
+      const failed = helpers.post(
+        "http://fake-base-url",
+        "/query",
+        { topic: "some/topic", size: 1n },
+        50,
+      )
+
+      await expect(failed).rejects.toThrow(HttpQueryError)
+    })
   })
 })

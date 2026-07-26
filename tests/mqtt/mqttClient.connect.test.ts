@@ -1,3 +1,4 @@
+import { jest, describe, it, expect } from "@jest/globals"
 import { MqttClient } from "../../src"
 import { ClientOptions } from "../../src/mqtt/types"
 import { processOptions } from "../../src/mqtt/helpers"
@@ -7,10 +8,6 @@ import { MqttConnectionError, MqttUsageError } from "../../src/errors"
 const connectMock = jest.mocked(mqtt.connectAsync)
 
 describe("MqttClient - Connection", () => {
-  beforeEach(() => {
-    jest.clearAllMocks()
-  })
-
   describe("Initialization", () => {
     it("should call mqtt.connectAsync with mqtt:// URI", async () => {
       const brokerUrl = "mqtt://dummy"
