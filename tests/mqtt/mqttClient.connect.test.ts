@@ -1,3 +1,4 @@
+import { jest, describe, it, expect } from "@jest/globals"
 import { MqttClient } from "../../src"
 import { ClientOptions } from "../../src/mqtt/types"
 import { processOptions } from "../../src/mqtt/helpers"

@@ -1,3 +1,4 @@
+import { jest } from "@jest/globals"
 import { Packet, MqttClient } from "mqtt"
 
 // Simple event listener storage for the mock

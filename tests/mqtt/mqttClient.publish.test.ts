@@ -1,3 +1,4 @@
+import { jest, describe, it, expect, beforeEach } from "@jest/globals"
 import { MqttClient as MqttJsClient } from "mqtt"
 import { MqttClient } from "../../src"
 import * as mqtt from "mqtt"
