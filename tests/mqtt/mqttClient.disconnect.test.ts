@@ -50,12 +50,10 @@ describe("MqttClient - Disconnect", () => {
       const endError = new Error("Socket already closed")
       mock.endAsync.mockRejectedValueOnce(endError)
 
-      let failure: unknown
-      try {
-        await client.disconnect()
-      } catch (error) {
-        failure = error
-      }
+      // captured rather than asserted with rejects.*, because toMatchObject and
+      // toHaveProperty compare structurally and cannot pin cause to the very
+      // error the broker threw
+      const failure = await client.disconnect().catch((error: unknown) => error)
 
       expect(failure).toBeInstanceOf(MqttDisconnectError)
       expect((failure as MqttDisconnectError).message).toMatch(

@@ -81,13 +81,12 @@ describe("MqttClient - Subscribe", () => {
       mock.subscribeAsync.mockRejectedValueOnce(brokerError)
 
       const callback = jest.fn()
-      let failure: unknown
-
-      try {
-        await client.subscribe("test/fails", callback)
-      } catch (error) {
-        failure = error
-      }
+      // captured rather than asserted with rejects.*, because toMatchObject and
+      // toHaveProperty compare structurally and cannot pin cause to the very
+      // error the broker threw
+      const failure = await client
+        .subscribe("test/fails", callback)
+        .catch((error: unknown) => error)
 
       expect(failure).toBeInstanceOf(MqttSubscribeError)
       expect((failure as MqttSubscribeError).cause).toBe(brokerError)

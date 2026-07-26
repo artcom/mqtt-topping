@@ -114,12 +114,12 @@ describe("MqttClient - Unsubscribe", () => {
       const brokerError = new Error("Broker rejected unsubscribe")
       mock.unsubscribeAsync.mockRejectedValueOnce(brokerError)
 
-      let failure: unknown
-      try {
-        await client.unsubscribe("test/unsub/fails", callback)
-      } catch (error) {
-        failure = error
-      }
+      // captured rather than asserted with rejects.*, because toMatchObject and
+      // toHaveProperty compare structurally and cannot pin cause to the very
+      // error the broker threw
+      const failure = await client
+        .unsubscribe("test/unsub/fails", callback)
+        .catch((error: unknown) => error)
 
       expect(failure).toBeInstanceOf(MqttUnsubscribeError)
       expect((failure as MqttUnsubscribeError).cause).toBe(brokerError)
@@ -189,12 +189,9 @@ describe("MqttClient - Unsubscribe", () => {
       const brokerError = new Error("Broker rejected unsubscribe")
       mock.unsubscribeAsync.mockRejectedValueOnce(brokerError)
 
-      let failure: unknown
-      try {
-        await client.forceUnsubscribe("test/force/fails")
-      } catch (error) {
-        failure = error
-      }
+      const failure = await client
+        .forceUnsubscribe("test/force/fails")
+        .catch((error: unknown) => error)
 
       expect(failure).toBeInstanceOf(MqttUnsubscribeError)
       expect((failure as MqttUnsubscribeError).message).toMatch(
