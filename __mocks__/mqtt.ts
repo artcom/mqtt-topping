@@ -44,6 +44,23 @@ export class MockMqttClient extends EventEmitter {
     .mockResolvedValue({} as Packet)
 
   endAsync = jest.fn<(force?: boolean) => Promise<void>>().mockResolvedValue()
+
+  /**
+   * Emits a broker message the way MQTT.js does. Prefer this over a raw
+   * `emit("message", …)`: `EventEmitter.emit` is untyped, so a misspelled event
+   * name or a wrong argument order silently reaches no listener and leaves
+   * `not.toHaveBeenCalled()` assertions passing for the wrong reason.
+   *
+   * Returns whether any listener was registered, so tests that expect delivery
+   * can assert the message was actually routed.
+   */
+  deliver(
+    topic: string,
+    payload: Buffer | Uint8Array,
+    packet: Packet = {} as Packet,
+  ): boolean {
+    return this.emit("message", topic, payload, packet)
+  }
 }
 
 // A fresh double per connect, so no state leaks between clients or tests.

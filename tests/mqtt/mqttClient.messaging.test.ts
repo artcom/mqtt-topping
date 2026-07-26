@@ -23,7 +23,7 @@ describe("MqttClient - Message Handling", () => {
       const payload = Buffer.from(JSON.stringify(payloadObj))
       const pkt = {} as Packet
 
-      mock.emit("message", "default/json", payload, pkt)
+      mock.deliver("default/json", payload, pkt)
 
       expect(callback).toHaveBeenCalledTimes(1)
       expect(callback).toHaveBeenCalledWith(payloadObj, "default/json", pkt)
@@ -37,7 +37,7 @@ describe("MqttClient - Message Handling", () => {
       const payload = Buffer.from(JSON.stringify(payloadObj))
       const pkt = {} as Packet
 
-      mock.emit("message", "json/topic", payload, pkt)
+      mock.deliver("json/topic", payload, pkt)
 
       expect(callback).toHaveBeenCalledTimes(1)
       expect(callback).toHaveBeenCalledWith(payloadObj, "json/topic", pkt)
@@ -49,7 +49,7 @@ describe("MqttClient - Message Handling", () => {
 
       const payload = Buffer.from("some text data")
 
-      mock.emit("message", "text/plain", payload, {} as Packet)
+      mock.deliver("text/plain", payload)
 
       expect(callback).toHaveBeenCalledTimes(1)
       expect(callback).toHaveBeenCalledWith("some text data", "text/plain", {})
@@ -61,7 +61,7 @@ describe("MqttClient - Message Handling", () => {
 
       const payload = Buffer.from([0xde, 0xad, 0xbe, 0xef])
 
-      mock.emit("message", "binary/data", payload, {} as Packet)
+      mock.deliver("binary/data", payload)
 
       expect(callback).toHaveBeenCalledTimes(1)
       expect(callback.mock.calls[0][0]).toEqual(payload)
@@ -78,7 +78,7 @@ describe("MqttClient - Message Handling", () => {
 
       const payload = Buffer.from('{"test":123}')
 
-      mock.emit("message", "update/parsing", payload, {} as Packet)
+      mock.deliver("update/parsing", payload)
 
       expect(callback).toHaveBeenCalledWith(
         '{"test":123}',
@@ -103,7 +103,7 @@ describe("MqttClient - Message Handling", () => {
       const payload = Buffer.from("custom format")
       const pkt = {} as Packet
 
-      mock.emit("message", "custom/data", payload, pkt)
+      mock.deliver("custom/data", payload, pkt)
 
       expect(customParser).toHaveBeenCalledWith(payload)
       expect(callback).toHaveBeenCalledTimes(1)
@@ -126,7 +126,7 @@ describe("MqttClient - Message Handling", () => {
       const invalidPayload = Buffer.from("{not valid JSON}")
       const pkt = {} as Packet
 
-      mock.emit("message", "json/invalid", invalidPayload, pkt)
+      mock.deliver("json/invalid", invalidPayload, pkt)
 
       expect(mainCallback).not.toHaveBeenCalled()
       expect(onParseError).toHaveBeenCalledTimes(1)
@@ -153,7 +153,7 @@ describe("MqttClient - Message Handling", () => {
       const payload = Buffer.from("bad custom data")
       const pkt = {} as Packet
 
-      mock.emit("message", "custom/fail", payload, pkt)
+      mock.deliver("custom/fail", payload, pkt)
 
       expect(callback).not.toHaveBeenCalled()
       expect(onParseError).toHaveBeenCalledTimes(1)
@@ -176,7 +176,7 @@ describe("MqttClient - Message Handling", () => {
 
       // Should not throw - errors go to onParseError callback
       expect(() =>
-        mock.emit("message", "error/in/handler", invalidPayload, pkt),
+        mock.deliver("error/in/handler", invalidPayload, pkt),
       ).not.toThrow()
 
       expect(callback).not.toHaveBeenCalled()
@@ -196,12 +196,7 @@ describe("MqttClient - Message Handling", () => {
 
       // Should not throw even without onParseError
       expect(() =>
-        mockNoHandler.emit(
-          "message",
-          "json/silent",
-          invalidPayload,
-          {} as Packet,
-        ),
+        mockNoHandler.deliver("json/silent", invalidPayload),
       ).not.toThrow()
 
       expect(callback).not.toHaveBeenCalled()
@@ -214,13 +209,10 @@ describe("MqttClient - Message Handling", () => {
         parseType: "string",
       })
 
-      mock.emit(
-        "message",
-        "random/unsubscribed",
-        Buffer.from("test"),
-        {} as Packet,
+      // the client receives the message, no subscription pattern matches it
+      expect(mock.deliver("random/unsubscribed", Buffer.from("test"))).toBe(
+        true,
       )
-
       expect(callback).not.toHaveBeenCalled()
     })
 
@@ -236,7 +228,7 @@ describe("MqttClient - Message Handling", () => {
       const pkt = {} as Packet
       const payload = Buffer.from("lights on")
 
-      mock.emit("message", "home/livingroom", payload, pkt)
+      mock.deliver("home/livingroom", payload, pkt)
 
       expect(cbExact).toHaveBeenCalledTimes(1)
       expect(cbExact).toHaveBeenCalledWith("lights on", "home/livingroom", pkt)
@@ -252,12 +244,7 @@ describe("MqttClient - Message Handling", () => {
       const callback = jest.fn()
       await client.subscribe("devices/#", callback, { parseType: "string" })
 
-      mock.emit(
-        "message",
-        "devices/livingroom/temp",
-        Buffer.from("22C"),
-        {} as Packet,
-      )
+      mock.deliver("devices/livingroom/temp", Buffer.from("22C"))
 
       expect(callback).toHaveBeenCalledWith(
         "22C",
@@ -272,25 +259,10 @@ describe("MqttClient - Message Handling", () => {
         parseType: "string",
       })
 
-      mock.emit(
-        "message",
-        "devices/livingroom/temp",
-        Buffer.from("22C"),
-        {} as Packet,
-      )
-      mock.emit(
-        "message",
-        "devices/kitchen/temp",
-        Buffer.from("24C"),
-        {} as Packet,
-      )
+      mock.deliver("devices/livingroom/temp", Buffer.from("22C"))
+      mock.deliver("devices/kitchen/temp", Buffer.from("24C"))
       // Non-matching path
-      mock.emit(
-        "message",
-        "devices/livingroom/humidity",
-        Buffer.from("45%"),
-        {} as Packet,
-      )
+      mock.deliver("devices/livingroom/humidity", Buffer.from("45%"))
 
       expect(callback).toHaveBeenCalledTimes(2)
       expect(callback).toHaveBeenCalledWith(
@@ -307,24 +279,9 @@ describe("MqttClient - Message Handling", () => {
         parseType: "string",
       })
 
-      mock.emit(
-        "message",
-        "home/first/livingroom/temp",
-        Buffer.from("22C"),
-        {} as Packet,
-      )
-      mock.emit(
-        "message",
-        "office/second/livingroom/lights",
-        Buffer.from("on"),
-        {} as Packet,
-      )
-      mock.emit(
-        "message",
-        "home/first/bedroom/temp",
-        Buffer.from("20C"),
-        {} as Packet,
-      )
+      mock.deliver("home/first/livingroom/temp", Buffer.from("22C"))
+      mock.deliver("office/second/livingroom/lights", Buffer.from("on"))
+      mock.deliver("home/first/bedroom/temp", Buffer.from("20C"))
 
       expect(callback).toHaveBeenCalledWith(
         "22C",

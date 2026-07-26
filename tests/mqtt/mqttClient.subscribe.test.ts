@@ -37,7 +37,7 @@ describe("MqttClient - Subscribe", () => {
       expect(mock.subscribeAsync).toHaveBeenCalledTimes(1)
 
       // both callbacks are served by the single broker subscription
-      mock.emit("message", "test/topic", Buffer.from('{"v":1}'), {})
+      mock.deliver("test/topic", Buffer.from('{"v":1}'))
       expect(callback1).toHaveBeenCalledWith({ v: 1 }, "test/topic", {})
       expect(callback2).toHaveBeenCalledWith({ v: 1 }, "test/topic", {})
     })
@@ -97,7 +97,7 @@ describe("MqttClient - Subscribe", () => {
       await client.subscribe("test/fails", callback)
 
       expect(mock.subscribeAsync).toHaveBeenCalledTimes(2)
-      mock.emit("message", "test/fails", Buffer.from('{"v":1}'), {})
+      mock.deliver("test/fails", Buffer.from('{"v":1}'))
       expect(callback).toHaveBeenCalledWith({ v: 1 }, "test/fails", {})
     })
   })

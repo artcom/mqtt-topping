@@ -28,7 +28,7 @@ describe("MqttClient - Unsubscribe", () => {
 
       // the remaining handler keeps receiving messages, so no broker unsubscribe
       expect(mock.unsubscribeAsync).not.toHaveBeenCalled()
-      mock.emit("message", "test/topic", Buffer.from('{"v":1}'), {})
+      mock.deliver("test/topic", Buffer.from('{"v":1}'))
       expect(cb1).not.toHaveBeenCalled()
       expect(cb2).toHaveBeenCalledTimes(1)
 
@@ -38,7 +38,7 @@ describe("MqttClient - Unsubscribe", () => {
       expect(mock.unsubscribeAsync).toHaveBeenCalledWith("test/topic", {
         properties: undefined,
       })
-      mock.emit("message", "test/topic", Buffer.from('{"v":2}'), {})
+      mock.deliver("test/topic", Buffer.from('{"v":2}'))
       expect(cb2).toHaveBeenCalledTimes(1)
     })
 
@@ -52,7 +52,8 @@ describe("MqttClient - Unsubscribe", () => {
       expect(mock.unsubscribeAsync).toHaveBeenCalledWith("test/unsub", {
         properties: undefined,
       })
-      mock.emit("message", "test/unsub", Buffer.from('{"v":1}'), {})
+      // the message still reaches the client, it just has no handler left for it
+      expect(mock.deliver("test/unsub", Buffer.from('{"v":1}'))).toBe(true)
       expect(callback).not.toHaveBeenCalled()
     })
 
@@ -137,7 +138,7 @@ describe("MqttClient - Unsubscribe", () => {
       })
 
       // every handler for the topic is gone, not just one
-      mock.emit("message", "test/force", Buffer.from('{"v":1}'), {})
+      expect(mock.deliver("test/force", Buffer.from('{"v":1}'))).toBe(true)
       expect(callback1).not.toHaveBeenCalled()
       expect(callback2).not.toHaveBeenCalled()
     })

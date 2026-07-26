@@ -92,8 +92,9 @@ describe("MqttClient - Disconnect", () => {
       await client.subscribe("test/late", callback)
 
       await client.disconnect()
-      mock.emit("message", "test/late", Buffer.from('{"v":1}'), {})
 
+      // no listener is left to route the message at all
+      expect(mock.deliver("test/late", Buffer.from('{"v":1}'))).toBe(false)
       expect(callback).not.toHaveBeenCalled()
     })
   })
