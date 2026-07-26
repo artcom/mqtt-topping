@@ -1,19 +1,16 @@
 import { jest, describe, it, expect, beforeEach } from "@jest/globals"
-import { MqttClient as MqttJsClient } from "mqtt"
 import { MqttClient } from "../../src"
+import { asMock, type MockMqttClient } from "../../__mocks__/mqtt"
 import { InvalidTopicError } from "../../src/errors"
-import * as mqtt from "mqtt"
 import { MqttUsageError } from "../../src/errors"
 
-const connectMock = jest.mocked(mqtt.connectAsync)
-
 describe("MqttClient - Unsubscribe", () => {
-  let mockMqttClient: jest.Mocked<Partial<MqttJsClient>>
+  let mock: MockMqttClient
   let client: MqttClient
 
   beforeEach(async () => {
-    mockMqttClient = await connectMock("mqtt://dummy")
     client = await MqttClient.connect("mqtt://dummy")
+    mock = asMock(client.underlyingClient)
   })
 
   describe("Standard unsubscribe", () => {
@@ -28,15 +25,14 @@ describe("MqttClient - Unsubscribe", () => {
 
       await client.unsubscribe("test/topic", cb1)
       expect(client["subscriptions"]["test/topic"].handlers).toHaveLength(1)
-      expect(mockMqttClient.unsubscribeAsync).not.toHaveBeenCalled()
+      expect(mock.unsubscribeAsync).not.toHaveBeenCalled()
 
       await client.unsubscribe("test/topic", cb2)
       expect(client["subscriptions"]["test/topic"]).toBeUndefined()
-      expect(mockMqttClient.unsubscribeAsync).toHaveBeenCalledTimes(1)
-      expect(mockMqttClient.unsubscribeAsync).toHaveBeenCalledWith(
-        "test/topic",
-        { properties: undefined },
-      )
+      expect(mock.unsubscribeAsync).toHaveBeenCalledTimes(1)
+      expect(mock.unsubscribeAsync).toHaveBeenCalledWith("test/topic", {
+        properties: undefined,
+      })
     })
 
     it("should unsubscribe from broker when removing the last handler", async () => {
@@ -45,20 +41,19 @@ describe("MqttClient - Unsubscribe", () => {
       await client.subscribe("test/unsub", callback)
       expect(client["subscriptions"]["test/unsub"].handlers).toHaveLength(1)
 
-      jest.mocked(mockMqttClient.unsubscribeAsync!).mockClear()
+      mock.unsubscribeAsync.mockClear()
 
       await client.unsubscribe("test/unsub", callback)
 
-      expect(mockMqttClient.unsubscribeAsync).toHaveBeenCalledWith(
-        "test/unsub",
-        { properties: undefined },
-      )
+      expect(mock.unsubscribeAsync).toHaveBeenCalledWith("test/unsub", {
+        properties: undefined,
+      })
       expect(client["subscriptions"]["test/unsub"]).toBeUndefined()
     })
 
     it("should do nothing if topic does not exist", async () => {
       await client.unsubscribe("non-existent", jest.fn())
-      expect(mockMqttClient.unsubscribeAsync).not.toHaveBeenCalled()
+      expect(mock.unsubscribeAsync).not.toHaveBeenCalled()
     })
 
     it("should pass MQTT5 properties to unsubscribeAsync", async () => {
@@ -73,7 +68,7 @@ describe("MqttClient - Unsubscribe", () => {
 
       await client.unsubscribe("test/mqtt5/unsub", callback, mqttProperties)
 
-      expect(mockMqttClient.unsubscribeAsync).toHaveBeenCalledWith(
+      expect(mock.unsubscribeAsync).toHaveBeenCalledWith(
         "test/mqtt5/unsub",
         mqttProperties,
       )
@@ -116,15 +111,14 @@ describe("MqttClient - Unsubscribe", () => {
       await client.subscribe("test/force", callback2)
       expect(client["subscriptions"]["test/force"].handlers).toHaveLength(2)
 
-      jest.mocked(mockMqttClient.unsubscribeAsync!).mockClear()
+      mock.unsubscribeAsync.mockClear()
 
       await client.forceUnsubscribe("test/force")
 
-      expect(mockMqttClient.unsubscribeAsync).toHaveBeenCalledTimes(1)
-      expect(mockMqttClient.unsubscribeAsync).toHaveBeenCalledWith(
-        "test/force",
-        { properties: undefined },
-      )
+      expect(mock.unsubscribeAsync).toHaveBeenCalledTimes(1)
+      expect(mock.unsubscribeAsync).toHaveBeenCalledWith("test/force", {
+        properties: undefined,
+      })
       expect(client["subscriptions"]["test/force"]).toBeUndefined()
     })
 
@@ -140,7 +134,7 @@ describe("MqttClient - Unsubscribe", () => {
 
       await client.forceUnsubscribe("test/mqtt5/force", mqttProperties)
 
-      expect(mockMqttClient.unsubscribeAsync).toHaveBeenCalledWith(
+      expect(mock.unsubscribeAsync).toHaveBeenCalledWith(
         "test/mqtt5/force",
         mqttProperties,
       )
@@ -148,7 +142,7 @@ describe("MqttClient - Unsubscribe", () => {
 
     it("should do nothing if topic does not exist", async () => {
       await client.forceUnsubscribe("non-existent")
-      expect(mockMqttClient.unsubscribeAsync).not.toHaveBeenCalled()
+      expect(mock.unsubscribeAsync).not.toHaveBeenCalled()
     })
 
     it("should throw InvalidTopicError for invalid topics", async () => {

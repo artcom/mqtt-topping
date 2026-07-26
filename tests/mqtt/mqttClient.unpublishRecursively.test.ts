@@ -1,19 +1,17 @@
 import { jest, describe, it, expect, beforeEach } from "@jest/globals"
 import { MqttClient } from "../../src"
+import { asMock, type MockMqttClient } from "../../__mocks__/mqtt"
 import { HttpClient } from "../../src/http/httpClient"
-import * as mqtt from "mqtt"
 import { FlatTopicResult } from "../../src/http/types"
 
-const connectMock = jest.mocked(mqtt.connectAsync)
-
 describe("MqttClient - Recursive Unpublish", () => {
-  let mockMqttClient: jest.Mocked<Partial<mqtt.MqttClient>>
+  let mock: MockMqttClient
   let client: MqttClient
   let mockHttpClient: jest.Mocked<HttpClient>
 
   beforeEach(async () => {
-    mockMqttClient = await connectMock("mqtt://dummy")
     client = await MqttClient.connect("mqtt://dummy")
+    mock = asMock(client.underlyingClient)
 
     // Mock HttpClient
     mockHttpClient = {
@@ -36,10 +34,10 @@ describe("MqttClient - Recursive Unpublish", () => {
       parseJson: false,
     })
 
-    expect(mockMqttClient.publishAsync).toHaveBeenCalledTimes(3)
+    expect(mock.publishAsync).toHaveBeenCalledTimes(3)
 
     // Verify all topics were unpublished
-    const calls = (mockMqttClient.publishAsync as jest.Mock).mock.calls
+    const calls = mock.publishAsync.mock.calls
     const unpublishedTopics = calls.map((call) => call[0])
     expect(unpublishedTopics).toEqual(expect.arrayContaining(topics))
 
@@ -55,7 +53,7 @@ describe("MqttClient - Recursive Unpublish", () => {
 
     await client.unpublishRecursively("root/empty", mockHttpClient)
 
-    expect(mockMqttClient.publishAsync).not.toHaveBeenCalled()
+    expect(mock.publishAsync).not.toHaveBeenCalled()
   })
 
   it("should batch unpublish calls", async () => {
@@ -66,7 +64,7 @@ describe("MqttClient - Recursive Unpublish", () => {
     const batchSize = 5
     await client.unpublishRecursively("root", mockHttpClient, { batchSize })
 
-    expect(mockMqttClient.publishAsync).toHaveBeenCalledTimes(15)
+    expect(mock.publishAsync).toHaveBeenCalledTimes(15)
   })
 
   it("should throttle unpublish calls", async () => {
@@ -84,7 +82,7 @@ describe("MqttClient - Recursive Unpublish", () => {
     })
     const duration = Date.now() - start
 
-    expect(mockMqttClient.publishAsync).toHaveBeenCalledTimes(4)
+    expect(mock.publishAsync).toHaveBeenCalledTimes(4)
     // Should have waited at least once (4 items / 2 batch size = 2 chunks. 1 delay between them)
     expect(duration).toBeGreaterThanOrEqual(delayMs - 20) // Allow some margin
   })

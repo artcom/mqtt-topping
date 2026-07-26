@@ -1,9 +1,6 @@
 import { jest, describe, it, expect, beforeEach } from "@jest/globals"
 import { Packet } from "mqtt"
 import { MqttClient } from "../../src"
-import * as mqtt from "mqtt"
-
-const connectMock = jest.mocked(mqtt.connectAsync)
 
 describe("MqttClient - Message Handling", () => {
   let client: MqttClient
@@ -11,7 +8,6 @@ describe("MqttClient - Message Handling", () => {
 
   beforeEach(async () => {
     onParseError = jest.fn()
-    await connectMock("mqtt://dummy")
     client = await MqttClient.connect("mqtt://dummy", { onParseError })
   })
 

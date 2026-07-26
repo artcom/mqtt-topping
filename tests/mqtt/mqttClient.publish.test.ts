@@ -1,22 +1,19 @@
-import { jest, describe, it, expect, beforeEach } from "@jest/globals"
-import { MqttClient as MqttJsClient } from "mqtt"
+import { describe, it, expect, beforeEach } from "@jest/globals"
 import { MqttClient } from "../../src"
-import * as mqtt from "mqtt"
+import { asMock, type MockMqttClient } from "../../__mocks__/mqtt"
 import {
   MqttPayloadError,
   InvalidTopicError,
   MqttPublishError,
 } from "../../src/errors"
 
-const connectMock = jest.mocked(mqtt.connectAsync)
-
 describe("MqttClient - Publishing", () => {
-  let mockMqttClient: jest.Mocked<Partial<MqttJsClient>>
+  let mock: MockMqttClient
   let client: MqttClient
 
   beforeEach(async () => {
-    mockMqttClient = await connectMock("mqtt://dummy")
     client = await MqttClient.connect("mqtt://dummy")
+    mock = asMock(client.underlyingClient)
   })
 
   describe("Basic publishing", () => {
@@ -27,10 +24,9 @@ describe("MqttClient - Publishing", () => {
         { qos: 1, retain: true },
       )
 
-      expect(mockMqttClient.publishAsync).toHaveBeenCalledTimes(1)
+      expect(mock.publishAsync).toHaveBeenCalledTimes(1)
 
-      const [topic, payload, opts] = (mockMqttClient.publishAsync as jest.Mock)
-        .mock.calls[0]
+      const [topic, payload, opts] = mock.publishAsync.mock.calls[0]
       expect(topic).toBe("test/topic")
       expect(JSON.parse(payload.toString())).toEqual({ data: "value" })
       expect(opts).toMatchObject({ qos: 1, retain: true })
@@ -39,10 +35,9 @@ describe("MqttClient - Publishing", () => {
     it("should unpublish by sending empty retained message (JSON stringify of undefined)", async () => {
       await client.unpublish("test/retained")
 
-      expect(mockMqttClient.publishAsync).toHaveBeenCalledTimes(1)
+      expect(mock.publishAsync).toHaveBeenCalledTimes(1)
 
-      const [topic, payload, opts] = (mockMqttClient.publishAsync as jest.Mock)
-        .mock.calls[0]
+      const [topic, payload, opts] = mock.publishAsync.mock.calls[0]
       expect(topic).toBe("test/retained")
       expect(payload.toString()).toBe("")
       expect(opts).toMatchObject({ qos: 2, retain: true })
@@ -51,29 +46,25 @@ describe("MqttClient - Publishing", () => {
     it("should use default QoS when not specified", async () => {
       await client.publish("test/defaults", { data: "value" })
 
-      const [, , opts] = (mockMqttClient.publishAsync as jest.Mock).mock
-        .calls[0]
+      const [, , opts] = mock.publishAsync.mock.calls[0]
       expect(opts.qos).toBe(2)
     })
 
     it("should correctly determine retain flag for event topics (prefix based)", async () => {
       await client.publish("some/device/onUpdate", { data: "value" })
-      const [, , optsEvent] = (mockMqttClient.publishAsync as jest.Mock).mock
-        .calls[0]
+      const [, , optsEvent] = mock.publishAsync.mock.calls[0]
       expect(optsEvent.retain).toBe(false)
     })
 
     it("should correctly determine retain flag for command topics (prefix based)", async () => {
       await client.publish("another/device/doRestart", { data: "value" })
-      const [, , optsCmd] = (mockMqttClient.publishAsync as jest.Mock).mock
-        .calls[0]
+      const [, , optsCmd] = mock.publishAsync.mock.calls[0]
       expect(optsCmd.retain).toBe(false)
     })
 
     it("should default to retain=true for regular topics", async () => {
       await client.publish("device/status", { data: "value" })
-      const [, , optsRegular] = (mockMqttClient.publishAsync as jest.Mock).mock
-        .calls[0]
+      const [, , optsRegular] = mock.publishAsync.mock.calls[0]
       expect(optsRegular.retain).toBe(true)
     })
   })
@@ -83,8 +74,7 @@ describe("MqttClient - Publishing", () => {
       const data = { complex: { nested: [1, 2, 3] } }
       await client.publish("test/json", data)
 
-      const [, payload] = (mockMqttClient.publishAsync as jest.Mock).mock
-        .calls[0]
+      const [, payload] = mock.publishAsync.mock.calls[0]
       expect(JSON.parse(payload.toString())).toEqual(data)
     })
 
@@ -92,8 +82,7 @@ describe("MqttClient - Publishing", () => {
       const data = "hello world"
       await client.publish("test/string", data, { parseType: "string" })
 
-      const [, payload] = (mockMqttClient.publishAsync as jest.Mock).mock
-        .calls[0]
+      const [, payload] = mock.publishAsync.mock.calls[0]
       expect(payload.toString()).toBe(data)
     })
 
@@ -101,8 +90,7 @@ describe("MqttClient - Publishing", () => {
       const data = Buffer.from([0x01, 0x02, 0x03])
       await client.publish("test/buffer", data, { parseType: "buffer" })
 
-      const [, payload] = (mockMqttClient.publishAsync as jest.Mock).mock
-        .calls[0]
+      const [, payload] = mock.publishAsync.mock.calls[0]
       expect(payload).toBe(data)
     })
 
@@ -110,8 +98,7 @@ describe("MqttClient - Publishing", () => {
       const data = "convert me to buffer"
       await client.publish("test/buffer-convert", data, { parseType: "buffer" })
 
-      const [, payload] = (mockMqttClient.publishAsync as jest.Mock).mock
-        .calls[0]
+      const [, payload] = mock.publishAsync.mock.calls[0]
       expect(payload).toBeInstanceOf(Buffer)
       expect(payload.toString()).toBe(data)
 
@@ -119,8 +106,7 @@ describe("MqttClient - Publishing", () => {
       await client.publish("test/buffer-convert-num", numData, {
         parseType: "buffer",
       })
-      const [, payloadNum] = (mockMqttClient.publishAsync as jest.Mock).mock
-        .calls[1]
+      const [, payloadNum] = mock.publishAsync.mock.calls[1]
       expect(payloadNum).toBeInstanceOf(Buffer)
       expect(payloadNum.toString()).toBe(String(numData))
     })
@@ -191,9 +177,7 @@ describe("MqttClient - Publishing", () => {
 
     it("should throw MqttPublishError when underlying publishAsync fails", async () => {
       const publishError = new Error("Broker unavailable")
-      ;(mockMqttClient.publishAsync as jest.Mock).mockRejectedValueOnce(
-        publishError,
-      )
+      mock.publishAsync.mockRejectedValueOnce(publishError)
 
       await expect(
         client.publish("test/network-error", "data"),

@@ -1,19 +1,16 @@
 import { jest, describe, it, expect, beforeEach } from "@jest/globals"
-import { MqttClient as MqttJsClient } from "mqtt"
 import { MqttClient } from "../../src"
+import { asMock, type MockMqttClient } from "../../__mocks__/mqtt"
 import { InvalidTopicError } from "../../src/errors"
-import * as mqtt from "mqtt"
 import { MqttUsageError } from "../../src/errors"
 
-const connectMock = jest.mocked(mqtt.connectAsync)
-
 describe("MqttClient - Subscribe", () => {
-  let mockMqttClient: jest.Mocked<Partial<MqttJsClient>>
+  let mock: MockMqttClient
   let client: MqttClient
 
   beforeEach(async () => {
-    mockMqttClient = await connectMock("mqtt://dummy")
     client = await MqttClient.connect("mqtt://dummy")
+    mock = asMock(client.underlyingClient)
   })
 
   describe("Basic functionality", () => {
@@ -21,8 +18,8 @@ describe("MqttClient - Subscribe", () => {
       const callback = jest.fn()
       await client.subscribe("test/topic", callback)
 
-      expect(mockMqttClient.subscribeAsync).toHaveBeenCalledTimes(1)
-      expect(mockMqttClient.subscribeAsync).toHaveBeenCalledWith("test/topic", {
+      expect(mock.subscribeAsync).toHaveBeenCalledTimes(1)
+      expect(mock.subscribeAsync).toHaveBeenCalledWith("test/topic", {
         qos: 2,
       })
     })
@@ -34,7 +31,7 @@ describe("MqttClient - Subscribe", () => {
       await client.subscribe("test/topic", callback1)
       await client.subscribe("test/topic", callback2)
 
-      expect(mockMqttClient.subscribeAsync).toHaveBeenCalledTimes(1)
+      expect(mock.subscribeAsync).toHaveBeenCalledTimes(1)
       expect(client["subscriptions"]["test/topic"].handlers).toHaveLength(2)
     })
 
@@ -42,7 +39,7 @@ describe("MqttClient - Subscribe", () => {
       const callback = jest.fn()
       await client.subscribe("test/qos", callback, { qos: 1 })
 
-      expect(mockMqttClient.subscribeAsync).toHaveBeenCalledWith("test/qos", {
+      expect(mock.subscribeAsync).toHaveBeenCalledWith("test/qos", {
         qos: 1,
       })
     })
@@ -93,7 +90,7 @@ describe("MqttClient - Subscribe", () => {
         ...mqttProperties,
       })
 
-      expect(mockMqttClient.subscribeAsync).toHaveBeenCalledWith("test/mqtt5", {
+      expect(mock.subscribeAsync).toHaveBeenCalledWith("test/mqtt5", {
         qos: 1,
         properties: mqttProperties.properties,
       })
