@@ -31,8 +31,6 @@ export class MockMqttClient extends EventEmitter {
     .mockResolvedValue({} as Packet)
 
   endAsync = jest.fn<(force?: boolean) => Promise<void>>().mockResolvedValue()
-
-  end = jest.fn()
 }
 
 // A fresh double per connect, so no state leaks between clients or tests.
