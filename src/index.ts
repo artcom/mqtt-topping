@@ -1,6 +1,8 @@
 export { MqttClient } from "./mqtt/mqttClient"
 export { HttpClient } from "./http/httpClient"
 
+export type { TopicQuerier } from "./mqtt/mqttClient"
+
 export type {
   SubscriptionHandler,
   MessageCallback,

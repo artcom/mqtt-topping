@@ -1,33 +1,30 @@
 import { jest, describe, it, expect, beforeEach } from "@jest/globals"
-import { MqttClient } from "../../src"
+import { MqttClient, type TopicQuerier } from "../../src"
 import { asMock, type MockMqttClient } from "../../__mocks__/mqtt"
-import { HttpClient } from "../../src/http/httpClient"
+import type { HttpClient } from "../../src/http/httpClient"
 import { FlatTopicResult } from "../../src/http/types"
 
 describe("MqttClient - Recursive Unpublish", () => {
   let mock: MockMqttClient
   let client: MqttClient
-  let mockHttpClient: jest.Mocked<HttpClient>
+  let httpStub: { query: jest.Mock<HttpClient["query"]> }
 
   beforeEach(async () => {
     client = await MqttClient.connect("mqtt://dummy")
     mock = asMock(client.underlyingClient)
 
-    // Mock HttpClient
-    mockHttpClient = {
-      query: jest.fn(),
-    } as unknown as jest.Mocked<HttpClient>
+    httpStub = { query: jest.fn<HttpClient["query"]>() } satisfies TopicQuerier
   })
 
   it("should unpublish all discovered topics", async () => {
     const topics = ["root/topic", "root/topic/sub1", "root/topic/sub2"]
     const flatResults: FlatTopicResult[] = topics.map((t) => ({ topic: t }))
 
-    mockHttpClient.query.mockResolvedValue(flatResults)
+    httpStub.query.mockResolvedValue(flatResults)
 
-    await client.unpublishRecursively("root/topic", mockHttpClient)
+    await client.unpublishRecursively("root/topic", httpStub)
 
-    expect(mockHttpClient.query).toHaveBeenCalledWith({
+    expect(httpStub.query).toHaveBeenCalledWith({
       topic: "root/topic",
       depth: -1,
       flatten: true,
@@ -49,9 +46,9 @@ describe("MqttClient - Recursive Unpublish", () => {
   })
 
   it("should do nothing if no topics found", async () => {
-    mockHttpClient.query.mockResolvedValue([])
+    httpStub.query.mockResolvedValue([])
 
-    await client.unpublishRecursively("root/empty", mockHttpClient)
+    await client.unpublishRecursively("root/empty", httpStub)
 
     expect(mock.publishAsync).not.toHaveBeenCalled()
   })
@@ -59,10 +56,10 @@ describe("MqttClient - Recursive Unpublish", () => {
   it("should batch unpublish calls", async () => {
     const topics = Array.from({ length: 15 }, (_, i) => `topic/${i}`)
     const flatResults: FlatTopicResult[] = topics.map((t) => ({ topic: t }))
-    mockHttpClient.query.mockResolvedValue(flatResults)
+    httpStub.query.mockResolvedValue(flatResults)
 
     const batchSize = 5
-    await client.unpublishRecursively("root", mockHttpClient, { batchSize })
+    await client.unpublishRecursively("root", httpStub, { batchSize })
 
     expect(mock.publishAsync).toHaveBeenCalledTimes(15)
   })
@@ -70,13 +67,13 @@ describe("MqttClient - Recursive Unpublish", () => {
   it("should throttle unpublish calls", async () => {
     const topics = ["t1", "t2", "t3", "t4"]
     const flatResults: FlatTopicResult[] = topics.map((t) => ({ topic: t }))
-    mockHttpClient.query.mockResolvedValue(flatResults)
+    httpStub.query.mockResolvedValue(flatResults)
 
     const batchSize = 2
     const delayMs = 100
 
     const start = Date.now()
-    await client.unpublishRecursively("root", mockHttpClient, {
+    await client.unpublishRecursively("root", httpStub, {
       batchSize,
       delayMs,
     })

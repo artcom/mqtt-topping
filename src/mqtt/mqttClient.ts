@@ -20,7 +20,7 @@ import {
 
 import { QoS } from "mqtt-packet"
 
-import { HttpClient } from "../http/httpClient"
+import type { HttpClient } from "../http/httpClient"
 import { FlatTopicResult } from "../http/types"
 
 import {
@@ -48,6 +48,9 @@ export interface UnpublishRecursivelyOptions {
   batchSize?: number
   delayMs?: number
 }
+
+/** The only part of an HttpClient that unpublishRecursively needs. */
+export type TopicQuerier = Pick<HttpClient, "query">
 
 export class MqttClient {
   public readonly underlyingClient: MqttJsClient
@@ -314,7 +317,7 @@ export class MqttClient {
 
   public async unpublishRecursively(
     topic: string,
-    httpClient: HttpClient,
+    httpClient: TopicQuerier,
     options?: UnpublishRecursivelyOptions,
   ): Promise<void> {
     validateTopicForPublish(topic)
