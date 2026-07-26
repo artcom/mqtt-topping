@@ -122,19 +122,15 @@ describe("HttpClient - Query Operations", () => {
       jsonResponse(serverError, { status: 404, statusText: "Not Found" }),
     )
 
-    let failure: unknown
-    try {
-      await httpClient.query({ topic: "nonexistent" })
-    } catch (error) {
-      failure = error
-    }
+    const failed = httpClient.query({ topic: "nonexistent" })
 
-    expect(failure).toBeInstanceOf(HttpRequestError)
-    const httpError = failure as HttpRequestError
-    expect(httpError.statusCode).toBe(404)
-    expect(httpError.url).toBe("http://fake-base-url/query")
-    expect(httpError.responseBody).toEqual(serverError)
-    expect(httpError.message).toContain("Status 404 - Not Found")
+    await expect(failed).rejects.toThrow(HttpRequestError)
+    await expect(failed).rejects.toMatchObject({
+      statusCode: 404,
+      url: "http://fake-base-url/query",
+      message: expect.stringContaining("Status 404 - Not Found"),
+    })
+    await expect(failed).rejects.toHaveProperty("responseBody", serverError)
   })
 
   it("query should throw HttpTimeoutError on timeout", async () => {
@@ -143,35 +139,28 @@ describe("HttpClient - Query Operations", () => {
     })
     fetchSpy.mockImplementationOnce(hangUntilAborted)
 
-    let failure: unknown
-    try {
-      await timeoutClient.query({ topic: "timeout/topic" })
-    } catch (error) {
-      failure = error
-    }
+    const failed = timeoutClient.query({ topic: "timeout/topic" })
 
-    expect(failure).toBeInstanceOf(HttpTimeoutError)
-    const timeoutError = failure as HttpTimeoutError
-    expect(timeoutError.url).toBe("http://fake-base-url/query")
-    expect(timeoutError.message).toContain("timed out after 5ms")
-    expect((timeoutError.cause as Error).name).toBe("TimeoutError")
+    await expect(failed).rejects.toThrow(HttpTimeoutError)
+    await expect(failed).rejects.toMatchObject({
+      url: "http://fake-base-url/query",
+      message: expect.stringContaining("timed out after 5ms"),
+    })
+    // the real AbortSignal.timeout() reason, not a hand-made error
+    await expect(failed).rejects.toHaveProperty("cause.name", "TimeoutError")
   })
 
   it("query should throw HttpNetworkError on fetch network failure", async () => {
     fetchSpy.mockRejectedValueOnce(new TypeError("fetch failed"))
 
-    let failure: unknown
-    try {
-      await httpClient.query({ topic: "network/error" })
-    } catch (error) {
-      failure = error
-    }
+    const failed = httpClient.query({ topic: "network/error" })
 
-    expect(failure).toBeInstanceOf(HttpNetworkError)
-    const networkError = failure as HttpNetworkError
-    expect(networkError.url).toBe("http://fake-base-url/query")
-    expect(networkError.message).toContain("fetch failed")
-    expect(networkError.cause).toBeInstanceOf(TypeError)
+    await expect(failed).rejects.toThrow(HttpNetworkError)
+    await expect(failed).rejects.toMatchObject({
+      url: "http://fake-base-url/query",
+      message: expect.stringContaining("fetch failed"),
+      cause: expect.any(TypeError),
+    })
   })
 
   it("query should throw HttpPayloadParseError if response JSON is invalid", async () => {
@@ -179,16 +168,11 @@ describe("HttpClient - Query Operations", () => {
       new Response("{invalid json string", { status: 200 }),
     )
 
-    let failure: unknown
-    try {
-      await httpClient.query({ topic: "bad/response" })
-    } catch (error) {
-      failure = error
-    }
+    const failed = httpClient.query({ topic: "bad/response" })
 
-    expect(failure).toBeInstanceOf(HttpPayloadParseError)
-    expect((failure as HttpPayloadParseError).message).toContain(
-      "Failed to parse successful response body",
+    await expect(failed).rejects.toThrow(HttpPayloadParseError)
+    await expect(failed).rejects.toThrow(
+      /Failed to parse successful response body/,
     )
   })
 
@@ -199,17 +183,13 @@ describe("HttpClient - Query Operations", () => {
     }
     fetchSpy.mockResolvedValueOnce(jsonResponse(mockResponse, { status: 200 }))
 
-    let failure: unknown
-    try {
-      await httpClient.query({ topic: "parse/fail", parseJson: true })
-    } catch (error) {
-      failure = error
-    }
+    const failed = httpClient.query({ topic: "parse/fail", parseJson: true })
 
-    expect(failure).toBeInstanceOf(HttpPayloadParseError)
-    const parseError = failure as HttpPayloadParseError
-    expect(parseError.topic).toBe("parse/fail")
-    expect(parseError.message).toContain("Failed to parse JSON payload")
+    await expect(failed).rejects.toThrow(HttpPayloadParseError)
+    await expect(failed).rejects.toMatchObject({
+      topic: "parse/fail",
+      message: expect.stringContaining("Failed to parse JSON payload"),
+    })
   })
 
   it("queryBatch should return HttpServerError for server-reported errors in batch items", async () => {
@@ -269,16 +249,9 @@ describe("HttpClient - Query Operations", () => {
     })
     fetchSpy.mockImplementationOnce(hangUntilAborted)
 
-    let failure: unknown
-    try {
-      await customHttpClient.query({ topic: "custom/timeout" })
-    } catch (error) {
-      failure = error
-    }
+    const failed = customHttpClient.query({ topic: "custom/timeout" })
 
-    expect(failure).toBeInstanceOf(HttpTimeoutError)
-    expect((failure as HttpTimeoutError).message).toContain(
-      `timed out after ${customTimeout}ms`,
-    )
+    await expect(failed).rejects.toThrow(HttpTimeoutError)
+    await expect(failed).rejects.toThrow(`timed out after ${customTimeout}ms`)
   })
 })

@@ -82,17 +82,13 @@ describe("HttpClient - JSON Operations", () => {
       jsonResponse([{ topic: "processing/fail", payload: "{}" }]),
     )
 
-    let failure: unknown
-    try {
-      await httpClient.queryJson("processing/fail")
-    } catch (error) {
-      failure = error
-    }
+    const failed = httpClient.queryJson("processing/fail")
 
-    expect(failure).toBeInstanceOf(HttpProcessingError)
-    const processingError = failure as HttpProcessingError
-    expect(processingError.topic).toBe("processing/fail")
-    expect(processingError.message).toContain("Unexpected array result")
+    await expect(failed).rejects.toThrow(HttpProcessingError)
+    await expect(failed).rejects.toMatchObject({
+      topic: "processing/fail",
+      message: expect.stringContaining("Unexpected array result"),
+    })
   })
 
   it("queryJsonBatch should return HttpQueryError if a topic has wildcards", async () => {
