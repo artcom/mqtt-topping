@@ -15,7 +15,12 @@ describe("HttpClient - JSON Operations", () => {
   let httpClient: HttpClient
 
   beforeEach(() => {
-    fetchSpy = jest.spyOn(globalThis, "fetch")
+    // A bare spyOn keeps calling the real fetch, which would resolve DNS for
+    // fake-base-url and surface as a plausible-looking HttpNetworkError. Fail
+    // loudly instead; the per-test *Once mocks still take precedence.
+    fetchSpy = jest
+      .spyOn(globalThis, "fetch")
+      .mockRejectedValue(new Error("unexpected fetch: queue a response first"))
     httpClient = new HttpClient("http://fake-base-url")
   })
 
