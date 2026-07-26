@@ -55,6 +55,11 @@ describe("MqttClient - Unsubscribe", () => {
       // the message still reaches the client, it just has no handler left for it
       expect(mock.deliver("test/unsub", Buffer.from('{"v":1}'))).toBe(true)
       expect(callback).not.toHaveBeenCalled()
+
+      // the topic was dropped rather than left with an empty handler list, so
+      // re-subscribing has to hit the broker again
+      await client.subscribe("test/unsub", callback)
+      expect(mock.subscribeAsync).toHaveBeenCalledTimes(2)
     })
 
     it("should do nothing if topic does not exist", async () => {
@@ -141,6 +146,11 @@ describe("MqttClient - Unsubscribe", () => {
       expect(mock.deliver("test/force", Buffer.from('{"v":1}'))).toBe(true)
       expect(callback1).not.toHaveBeenCalled()
       expect(callback2).not.toHaveBeenCalled()
+
+      // the topic was dropped rather than left with an empty handler list, so
+      // re-subscribing has to hit the broker again
+      await client.subscribe("test/force", callback1)
+      expect(mock.subscribeAsync).toHaveBeenCalledTimes(2)
     })
 
     it("should pass MQTT5 properties to forceUnsubscribe", async () => {
