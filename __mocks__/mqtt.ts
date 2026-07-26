@@ -1,6 +1,13 @@
 import { jest } from "@jest/globals"
 import { EventEmitter } from "node:events"
-import type { MqttClient, ISubscriptionGrant, Packet } from "mqtt"
+import type {
+  MqttClient,
+  IClientPublishOptions,
+  IClientSubscribeOptions,
+  IClientUnsubscribeProperties,
+  ISubscriptionGrant,
+  Packet,
+} from "mqtt"
 
 // Inherits real listener bookkeeping and a synchronous `emit` from EventEmitter,
 // so tests can drive the client through the same event path MQTT.js uses.
@@ -10,13 +17,19 @@ export class MockMqttClient extends EventEmitter {
 
   subscribeAsync = jest
     .fn<
-      (topic: string | string[], opts?: object) => Promise<ISubscriptionGrant[]>
+      (
+        topic: string | string[],
+        opts?: IClientSubscribeOptions,
+      ) => Promise<ISubscriptionGrant[]>
     >()
     .mockResolvedValue([])
 
   unsubscribeAsync = jest
     .fn<
-      (topic: string | string[], opts?: object) => Promise<Packet | undefined>
+      (
+        topic: string | string[],
+        opts?: IClientUnsubscribeProperties,
+      ) => Promise<Packet | undefined>
     >()
     .mockResolvedValue({} as Packet)
 
@@ -25,7 +38,7 @@ export class MockMqttClient extends EventEmitter {
       (
         topic: string,
         payload: string | Buffer,
-        opts?: object,
+        opts?: IClientPublishOptions,
       ) => Promise<Packet | undefined>
     >()
     .mockResolvedValue({} as Packet)
