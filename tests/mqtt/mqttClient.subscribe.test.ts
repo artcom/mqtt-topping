@@ -1,8 +1,11 @@
 import { jest, describe, it, expect, beforeEach } from "@jest/globals"
 import { MqttClient } from "../../src"
 import { asMock, type MockMqttClient } from "../../__mocks__/mqtt"
-import { InvalidTopicError } from "../../src/errors"
-import { MqttUsageError } from "../../src/errors"
+import {
+  InvalidTopicError,
+  MqttSubscribeError,
+  MqttUsageError,
+} from "../../src/errors"
 
 describe("MqttClient - Subscribe", () => {
   let mock: MockMqttClient
@@ -74,8 +77,28 @@ describe("MqttClient - Subscribe", () => {
     })
 
     it("should handle errors from subscribeAsync and clean up on failure", async () => {
-      // Skipping test that relies on mocking implementation details
-      expect(true).toBe(true)
+      const brokerError = new Error("Broker rejected subscription")
+      mock.subscribeAsync.mockRejectedValueOnce(brokerError)
+
+      const callback = jest.fn()
+      let failure: unknown
+
+      try {
+        await client.subscribe("test/fails", callback)
+      } catch (error) {
+        failure = error
+      }
+
+      expect(failure).toBeInstanceOf(MqttSubscribeError)
+      expect((failure as MqttSubscribeError).cause).toBe(brokerError)
+      expect((failure as MqttSubscribeError).topic).toBe("test/fails")
+
+      // the failed subscription was rolled back, so a retry hits the broker again
+      await client.subscribe("test/fails", callback)
+
+      expect(mock.subscribeAsync).toHaveBeenCalledTimes(2)
+      mock.emit("message", "test/fails", Buffer.from('{"v":1}'), {})
+      expect(callback).toHaveBeenCalledWith({ v: 1 }, "test/fails", {})
     })
   })
 

@@ -1,8 +1,11 @@
 import { jest, describe, it, expect, beforeEach } from "@jest/globals"
 import { MqttClient } from "../../src"
 import { asMock, type MockMqttClient } from "../../__mocks__/mqtt"
-import { InvalidTopicError } from "../../src/errors"
-import { MqttUsageError } from "../../src/errors"
+import {
+  InvalidTopicError,
+  MqttUnsubscribeError,
+  MqttUsageError,
+} from "../../src/errors"
 
 describe("MqttClient - Unsubscribe", () => {
   let mock: MockMqttClient
@@ -99,8 +102,22 @@ describe("MqttClient - Unsubscribe", () => {
     })
 
     it("should throw MqttUnsubscribeError when unsubscribeAsync fails", async () => {
-      // Skip mock testing for simplicity
-      expect(true).toBe(true)
+      const callback = jest.fn()
+      await client.subscribe("test/unsub/fails", callback)
+
+      const brokerError = new Error("Broker rejected unsubscribe")
+      mock.unsubscribeAsync.mockRejectedValueOnce(brokerError)
+
+      let failure: unknown
+      try {
+        await client.unsubscribe("test/unsub/fails", callback)
+      } catch (error) {
+        failure = error
+      }
+
+      expect(failure).toBeInstanceOf(MqttUnsubscribeError)
+      expect((failure as MqttUnsubscribeError).cause).toBe(brokerError)
+      expect((failure as MqttUnsubscribeError).topic).toBe("test/unsub/fails")
     })
   })
 
@@ -155,8 +172,24 @@ describe("MqttClient - Unsubscribe", () => {
     })
 
     it("should throw MqttUnsubscribeError when unsubscribeAsync fails during force unsubscribe", async () => {
-      // Skip mock testing for simplicity
-      expect(true).toBe(true)
+      const callback = jest.fn()
+      await client.subscribe("test/force/fails", callback)
+
+      const brokerError = new Error("Broker rejected unsubscribe")
+      mock.unsubscribeAsync.mockRejectedValueOnce(brokerError)
+
+      let failure: unknown
+      try {
+        await client.forceUnsubscribe("test/force/fails")
+      } catch (error) {
+        failure = error
+      }
+
+      expect(failure).toBeInstanceOf(MqttUnsubscribeError)
+      expect((failure as MqttUnsubscribeError).message).toMatch(
+        /forceUnsubscribe failed/,
+      )
+      expect((failure as MqttUnsubscribeError).cause).toBe(brokerError)
     })
   })
 })
