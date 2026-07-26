@@ -21,8 +21,16 @@ const jsonResponse = (body: unknown, init?: ResponseInit) =>
 // AbortSignal.timeout() fires, exactly as a hanging connection would.
 const hangUntilAborted = (_input: RequestInfo | URL, init?: RequestInit) =>
   new Promise<Response>((_resolve, reject) => {
-    init?.signal?.addEventListener("abort", () => {
-      reject(init.signal?.reason)
+    const signal = init?.signal
+    if (!signal) {
+      // Without a signal nothing would ever settle this promise, turning a
+      // wiring mistake into an opaque test timeout.
+      reject(new Error("request was made without an AbortSignal"))
+      return
+    }
+
+    signal.addEventListener("abort", () => {
+      reject(signal.reason ?? new Error("request aborted without a reason"))
     })
   })
 
