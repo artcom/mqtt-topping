@@ -35,7 +35,7 @@ export function makeObject(result: TopicResult): unknown {
     if (result.children && result.children.length > 0) {
       const obj: Record<string, unknown> = {}
       result.children.forEach((child) => {
-        let key = ""
+        let key: string
         if (result.topic === "/") {
           key = child.topic.substring(1).split("/")[0]
         } else if (child.topic.startsWith(result.topic + "/")) {
