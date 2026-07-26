@@ -187,19 +187,22 @@ export async function post<T>(
       throw error
     }
 
-    if (error instanceof Error) {
-      if (error.name === "AbortError") {
-        throw new HttpTimeoutError(url, timeoutMs, { cause: error })
-      }
-      if (
-        error instanceof SyntaxError &&
-        error.message.includes("JSON.stringify")
-      ) {
-        throw new HttpQueryError(
-          `Failed to stringify request body: ${error.message}`,
-          { cause: error, query: body },
-        )
-      }
+    // AbortSignal.timeout() aborts with a "TimeoutError", a manual abort with
+    // an "AbortError". Both arrive as a DOMException, which is not reliably
+    // `instanceof Error` across realms, so match on the name alone.
+    const name = (error as { name?: unknown } | null | undefined)?.name
+    if (name === "AbortError" || name === "TimeoutError") {
+      throw new HttpTimeoutError(url, timeoutMs, { cause: error })
+    }
+
+    if (
+      error instanceof SyntaxError &&
+      error.message.includes("JSON.stringify")
+    ) {
+      throw new HttpQueryError(
+        `Failed to stringify request body: ${error.message}`,
+        { cause: error, query: body },
+      )
     }
 
     throw new HttpNetworkError(url, errorMessage(error), { cause: error })
